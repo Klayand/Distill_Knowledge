@@ -25,7 +25,7 @@ class ALRS():
     def step(self, loss, current_epoch):
         if current_epoch < self.warmup_epoch:
             now_lr = self.lr_max * current_epoch / self.warmup_epoch
-            for group in self.optimizer.param.groups:
+            for group in self.optimizer.param_groups:
                 group['lr'] = now_lr
                 print(f"now lr = {now_lr}")
 
