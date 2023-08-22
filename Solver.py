@@ -156,10 +156,10 @@ class Solver():
                 x, y = x.to(self.device), y.to(self.device)
                 if fp16:
                     with autocast():
-                            loss, losses_dict = distiller.forward_train(image=x, target=y)
+                            student_logits, losses_dict, loss = distiller.forward_train(image=x, target=y)
 
                 else:
-                        loss, losses_dict = distiller.forward_train(image=x, target=y)
+                        student_logits, losses_dict, loss = distiller.forward_train(image=x, target=y)
 
                 train_loss += loss.item()
 
@@ -190,7 +190,7 @@ class Solver():
             with torch.no_grad():
                 for step, (x, y) in enumerate(vbar, 1):
                     x, y = x.to(self.device), y.to(self.device)
-                    student_out, _ = self.student(x)
+                    student_out, _, = self.student(x)
                     _, pre = torch.max(student_out, dim=1)
                     loss = self.criterion(student_out, y)
 
@@ -218,18 +218,16 @@ class Solver():
 
 if __name__ == '__main__':
     import torchvision
-    from torchvision.models import resnet18, resnet34
-    from distiller import KD
+    from backbone import resnet8, resnet14
+    from distiller import KD, SP, NST
     from data import get_CIFAR100_train, get_CIFAR100_test
 
-    student_model = resnet18()
-    student_model.fc = nn.Linear(student_model.fc.in_features, 100)
+    student_model = resnet8(num_classes=100)
+    teacher_model = resnet14(num_classes=100)
 
-    teacher_model = resnet34()
-    teacher_model.fc = nn.Linear(student_model.fc.in_features, 100)
-
-    distiller = KD(teacher=teacher_model, student=student_model, temperature=4,
-                   ce_weight=1, kd_weight=5)
+    distiller = NST(teacher=teacher_model, student=student_model,
+                    temperature=4, ce_weight=1, feature_weight=4,
+                    single_stage=False, kernel_function='gaussian')
 
     train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
     test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)

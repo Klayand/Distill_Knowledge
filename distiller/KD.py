@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ._base_distiller import Distiller
+from .__base_distiller import Distiller
 
 
 def kd_loss(logits_student, logits_teacher, temperature):
@@ -42,24 +42,6 @@ class KD(Distiller):
             'loss_kd': loss_kd
         }
 
-        loss = loss_kd + loss_ce
+        total_loss = loss_kd + loss_ce
 
-        return loss, losses_dict
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return logits_student, losses_dict, total_loss

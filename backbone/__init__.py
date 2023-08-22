@@ -15,3 +15,4 @@ from .vgg import *
 from .wrn import *
 from .PyramidNet import *
 from .ConvNet import *
+from .batchensemble import *

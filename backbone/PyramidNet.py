@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from batchensemble import Ensemble_Conv2d, Ensemble_FC, Ensemble_orderFC
+from .batchensemble import Ensemble_Conv2d, Ensemble_FC, Ensemble_orderFC
 
 __all__ = ["pyramidnet272", "pyramidnet164"]
 
