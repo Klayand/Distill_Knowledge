@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ["ShuffleV1_aux", "ShuffleV1"]
+__all__ = ["ShuffleV1"]
 
 
 class ShuffleBlock(nn.Module):
@@ -121,101 +121,18 @@ class ShuffleNet(nn.Module):
         f3 = out
         out = F.avg_pool2d(out, 4)
         out = out.reshape(out.size(0), -1)
+        avg = out
+
         out = self.linear(out)
-        if is_feat:
-            return [f0, f1, f2, f3], out
-        else:
-            return out
 
-
-class Auxiliary_Classifier(nn.Module):
-    def __init__(self, cfg, num_classes=10):
-        super(Auxiliary_Classifier, self).__init__()
-        out_planes = cfg["out_planes"]
-        num_blocks = cfg["num_blocks"]
-        groups = cfg["groups"]
-
-        self.in_planes = out_planes[0]
-        self.block_extractor1 = nn.Sequential(
-            *[
-                self._make_layer(out_planes[1], num_blocks[1], groups),
-                self._make_layer(out_planes[2], num_blocks[2], groups),
-            ]
-        )
-        self.in_planes = out_planes[1]
-        self.block_extractor2 = nn.Sequential(
-            *[self._make_layer(out_planes[2], num_blocks[2], groups)]
-        )
-
-        self.inplanes = out_planes[2]
-        self.block_extractor3 = nn.Sequential(
-            *[self._make_layer(out_planes[2], num_blocks[2], groups, downsample=False)]
-        )
-
-        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(out_planes[2], num_classes)
-        self.fc2 = nn.Linear(out_planes[2], num_classes)
-        self.fc3 = nn.Linear(out_planes[2], num_classes)
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2.0 / n))
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                m.bias.data.zero_()
-
-    def _make_layer(self, out_planes, num_blocks, groups, downsample=True):
-        layers = []
-        for i in range(num_blocks):
-            stride = 2 if i == 0 and downsample is True else 1
-            cat_planes = self.in_planes if i == 0 and downsample is True else 0
-            layers.append(
-                Bottleneck(
-                    self.in_planes,
-                    out_planes - cat_planes,
-                    stride=stride,
-                    groups=groups,
-                    is_last=(i == num_blocks - 1),
-                )
-            )
-            self.in_planes = out_planes
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        ss_logits = []
-        for i in range(len(x)):
-            idx = i + 1
-            out = getattr(self, "block_extractor" + str(idx))(x[i])
-            out = self.avg_pool(out)
-            out = out.view(out.size(0), -1)
-            out = getattr(self, "fc" + str(idx))(out)
-            ss_logits.append(out)
-        return ss_logits
-
-
-class ShuffleNet_Auxiliary(nn.Module):
-    def __init__(self, cfg, num_classes=100):
-        super(ShuffleNet_Auxiliary, self).__init__()
-        self.backbone = ShuffleNet(cfg, num_classes=num_classes)
-        self.auxiliary_classifier = Auxiliary_Classifier(cfg, num_classes=num_classes * 4)
-
-    def forward(self, x, grad=False):
-        feats, logit = self.backbone(x, is_feat=True)
-        if grad is False:
-            for i in range(len(feats)):
-                feats[i] = feats[i].detach()
-        ss_logits = self.auxiliary_classifier(feats)
-        return logit, ss_logits
+        features = {}
+        features['features'] = [f0, f1, f2, f3]
+        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
+        features['avgpool_feature'] = [avg]
+        return out, features
 
 
 def ShuffleV1(**kwargs):
     cfg = {"out_planes": [240, 480, 960], "num_blocks": [4, 8, 4], "groups": 3}
     return ShuffleNet(cfg, **kwargs)
 
-
-def ShuffleV1_aux(**kwargs):
-    cfg = {"out_planes": [240, 480, 960], "num_blocks": [4, 8, 4], "groups": 3}
-    return ShuffleNet_Auxiliary(cfg, **kwargs)

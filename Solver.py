@@ -67,12 +67,12 @@ class Solver():
                 x, y = x.to(self.device), y.to(self.device)
                 if fp16:
                     with autocast():
-                        teacher_out = self.teacher(x)
+                        teacher_out, _ = self.teacher(x)
                         _, pre = torch.max(teacher_out, dim=1)
                         loss = self.criterion(teacher_out, y)
 
                 else:
-                    teacher_out = self.teacher(x)
+                    teacher_out, _ = self.teacher(x)
                     _, pre = torch.max(teacher_out, dim=1)
                     loss = self.criterion(teacher_out, y)
 
@@ -109,7 +109,7 @@ class Solver():
             with torch.no_grad():
                 for step, (x, y) in enumerate(vbar, 1):
                     x, y = x.to(self.device), y.to(self.device)
-                    teacher_out = self.teacher(x)
+                    teacher_out, _ = self.teacher(x)
                     _, pre = torch.max(teacher_out, dim=1)
                     loss = self.criterion(teacher_out, y)
 
@@ -190,7 +190,7 @@ class Solver():
             with torch.no_grad():
                 for step, (x, y) in enumerate(vbar, 1):
                     x, y = x.to(self.device), y.to(self.device)
-                    student_out = self.student(x)
+                    student_out, _ = self.student(x)
                     _, pre = torch.max(student_out, dim=1)
                     loss = self.criterion(student_out, y)
 

@@ -27,9 +27,9 @@ class KD(Distiller):
 
     # calculate a mini-batch data
     def forward_train(self, image, target, **kwargs):
-        logits_student = self.student(image)
+        logits_student, _ = self.student(image)
         with torch.no_grad():
-            logits_teacher = self.teacher(image)
+            logits_teacher, _ = self.teacher(image)
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
@@ -45,9 +45,6 @@ class KD(Distiller):
         loss = loss_kd + loss_ce
 
         return loss, losses_dict
-
-
-
 
 
 

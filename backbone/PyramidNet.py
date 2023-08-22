@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from .batchensemble import Ensemble_Conv2d, Ensemble_FC, Ensemble_orderFC
+from batchensemble import Ensemble_Conv2d, Ensemble_FC, Ensemble_orderFC
 
 __all__ = ["pyramidnet272", "pyramidnet164"]
 
@@ -243,13 +243,16 @@ class PyramidNet(nn.Module):
             num_models=-1,
     ):
         super(PyramidNet, self).__init__()
+
         """
-		inplanes_dict = {'imagenet': {1: 64, 2: 44, 4: 32, 8: 24},
-							'cifar10': {1: 16, 2: 12, 4: 8, 8: 6, 16: 4},
-							'cifar100': {1: 16, 2: 12, 4: 8, 8: 6, 16: 4},
-							'svhn': {1: 16, 2: 12, 4: 8, 8: 6, 16: 4},
-						}
+		inplanes_dict = {
+		    'imagenet': {1: 64, 2: 44, 4: 32, 8: 24},
+            'cifar10': {1: 16, 2: 12, 4: 8, 8: 6, 16: 4},
+            'cifar100': {1: 16, 2: 12, 4: 8, 8: 6, 16: 4},
+            'svhn': {1: 16, 2: 12, 4: 8, 8: 6, 16: 4},
+		}
 		"""
+
         self.num_models = num_models
         self.inplanes = 16
 
@@ -347,16 +350,35 @@ class PyramidNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
+        f0 = x
+
         x = self.maxpool(x)
+
         x = self.layer1(x)
+        f1 = x
+
         x = self.layer2(x)
+        f2 = x
+
         x = self.layer3(x)
+        f3 = x
+
         x = self.bn_final(x)
+
+        final_pre = x
         x = self.relu_final(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
-        return x
+        avg = x
+
+        out = self.fc(x)
+
+        features = {}
+        features['features'] = [f0, f1, f2, f3]
+        features['preact_features'] = [f0, final_pre]
+        features['avgpool_feature'] = avg
+
+        return out, features
 
 
 def pyramidnet164(bottleneck=True, num_models=-1, **kwargs):
@@ -367,3 +389,4 @@ def pyramidnet164(bottleneck=True, num_models=-1, **kwargs):
 def pyramidnet272(bottleneck=True, num_models=-1, **kwargs):
     """PyramidNet272 for CIFAR and SVHN"""
     return PyramidNet(bottleneck=bottleneck, depth=272, alpha=200, num_models=num_models, **kwargs)
+

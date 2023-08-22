@@ -1,7 +1,7 @@
 """
     Original Author: Huanran Chen
 """
-
+import numpy
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -50,7 +50,7 @@ class BasicBlock(nn.Module):
     __constants__ = ['downsample']
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None):
+                 base_width=64, dilation=1, norm_layer=None, is_last=False):
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -66,6 +66,7 @@ class BasicBlock(nn.Module):
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
         self.stride = stride
+        self.is_last = is_last
 
     def forward(self, x):
         identity = x
@@ -81,9 +82,14 @@ class BasicBlock(nn.Module):
             identity = self.downsample(x)
 
         out += identity
+        preact = out
+
         out = self.relu(out)
 
-        return out
+        if self.is_last:
+            return out, preact
+        else:
+            return out
 
 
 class Bottleneck(nn.Module):
@@ -91,7 +97,7 @@ class Bottleneck(nn.Module):
     __constants__ = ['downsample']
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None):
+                 base_width=64, dilation=1, norm_layer=None, is_last=False):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -106,6 +112,7 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
+        self.is_last = is_last
 
     def forward(self, x):
         identity = x
@@ -125,16 +132,22 @@ class Bottleneck(nn.Module):
             identity = self.downsample(x)
 
         out += identity
+
+        preact = out
+
         out = self.relu(out)
 
-        return out
+        if self.is_last:
+            return out, preact
+        else:
+            return out
 
 
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
-                 norm_layer=None):
+                 norm_layer=None, is_last=False):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -198,12 +211,12 @@ class ResNet(nn.Module):
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, previous_dilation, norm_layer))
+                            self.base_width, previous_dilation, norm_layer, is_last=(blocks == 1)))
         self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
+        for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, dilation=self.dilation,
-                                norm_layer=norm_layer))
+                                norm_layer=norm_layer, is_last=(i == blocks - 1)))
 
         return nn.Sequential(*layers)
 
@@ -211,12 +224,20 @@ class ResNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
+        f0 = x
         x = self.maxpool(x)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x, f1_pre = self.layer1(x)
+        f1 = x
+
+        x, f2_pre = self.layer2(x)
+        f2 = x
+
+        x, f3_pre = self.layer3(x)
+        f3 = x
+
+        x, f4_pre = self.layer4(x)
+        f4 = x
 
         if self.training:
             if epoch <= 18:
@@ -308,9 +329,16 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        x = self.fc(x)
+        avg = x
 
-        return x
+        out = self.fc(x)
+
+        features = {}
+        features['features'] = [f0, f1, f2, f3, f4]
+        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+        features['avgpool_feature'] = avg
+
+        return out, features
 
 
 def _resnet(arch, block, layers, pretrained, progress, **kwargs):
