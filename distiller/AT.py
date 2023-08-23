@@ -90,9 +90,6 @@ def gradient_based_loss(input_data, target, teacher_net, student_net, at_method)
     return result
 
 
-
-
-
 class AT(Distiller):
     """  Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer """
 
