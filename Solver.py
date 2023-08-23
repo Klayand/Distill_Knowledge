@@ -219,15 +219,15 @@ class Solver():
 if __name__ == '__main__':
     import torchvision
     from backbone import resnet8, resnet14
-    from distiller import KD, SP, NST
+    from distiller import KD, SP, NST, AT
     from data import get_CIFAR100_train, get_CIFAR100_test
 
     student_model = resnet8(num_classes=100)
     teacher_model = resnet14(num_classes=100)
 
-    distiller = NST(teacher=teacher_model, student=student_model,
+    distiller = AT(teacher=teacher_model, student=student_model,
                     temperature=4, ce_weight=1, feature_weight=4,
-                    single_stage=False, kernel_function='gaussian')
+                    single_stage=False, at_method='gradient_flip')
 
     train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
     test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
