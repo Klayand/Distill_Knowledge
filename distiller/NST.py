@@ -87,7 +87,7 @@ class NST(Distiller):
     """ Like What You Like: Knowledge Distill via Neuron Selectivity Transfer"""
 
     def __init__(self, teacher, student,
-                 ce_weight, feature_weight, temperature=None,
+                 ce_weight=1.0, feature_weight=50.0, temperature=None,
                  single_stage=False, kernel_function: str='poly'):
         super(NST, self).__init__(student=student, teacher=teacher)
         self.ce_weight = ce_weight

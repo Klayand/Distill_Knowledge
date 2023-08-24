@@ -24,7 +24,8 @@ def sp_loss(teacher_feature, student_feature):
 
 class SP(Distiller):
     """ Similarity-Preserving Knowledge Distillation, ICCV2019"""
-    def __init__(self, teacher, student, ce_weight, feature_weight, temperature=None):
+    def __init__(self, teacher, student,
+                 ce_weight=1.0, feature_weight=3000.0, temperature=None):
         super(SP, self).__init__(teacher=teacher, student=student)
 
         self.ce_weight = ce_weight

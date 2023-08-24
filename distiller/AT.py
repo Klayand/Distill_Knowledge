@@ -94,7 +94,7 @@ class AT(Distiller):
     """  Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer """
 
     def __init__(self, teacher, student,
-                ce_weight, feature_weight, temperature=None, p=2,
+                ce_weight=1.0, feature_weight=1000.0, temperature=None, p=2,
                 single_stage=False, at_method: str= 'activation_sum'):
         super(AT, self).__init__(teacher=teacher, student=student)
         self.ce_weight = ce_weight

@@ -218,15 +218,14 @@ class Solver():
 
 if __name__ == '__main__':
     import torchvision
-    from backbone import resnet8, resnet14
-    from distiller import DistanceWiseRKD
+    from backbone import resnet8, resnet14, wrn_16_1
+    from distiller import FitNet
     from data import get_CIFAR100_train, get_CIFAR100_test
 
     student_model = resnet8(num_classes=100)
-    teacher_model = resnet14(num_classes=100)
+    teacher_model = wrn_16_1(num_classes=100)
 
-    distiller = DistanceWiseRKD(teacher=teacher_model, student=student_model,
-                    temperature=4, ce_weight=2, rkd_weight=5)
+    distiller = FitNet(teacher=teacher_model, student=student_model, with_l2_norm=True)
 
     train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
     test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)

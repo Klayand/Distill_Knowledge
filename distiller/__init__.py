@@ -5,6 +5,7 @@ from .NST import NST
 from .AT import AT
 from .RKD import DistanceWiseRKD, AngleWiseRKD
 from .CWD import ChannelWiseDivergence
+from .FitNet import FitNet
 
 __all__ = ['Distiller',
            'KD',
@@ -13,4 +14,5 @@ __all__ = ['Distiller',
            'AT',
            'DistanceWiseRKD',
            'AngleWiseRKD',
-           'ChannelWiseDivergence']
+           'ChannelWiseDivergence',
+           'FitNet']
