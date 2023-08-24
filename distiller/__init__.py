@@ -4,6 +4,7 @@ from .SP import SP
 from .NST import NST
 from .AT import AT
 from .RKD import DistanceWiseRKD, AngleWiseRKD
+from .CWD import ChannelWiseDivergence
 
 __all__ = ['Distiller',
            'KD',
@@ -11,4 +12,5 @@ __all__ = ['Distiller',
            'NST',
            'AT',
            'DistanceWiseRKD',
-           'AngleWiseRKD']
+           'AngleWiseRKD',
+           'ChannelWiseDivergence']
