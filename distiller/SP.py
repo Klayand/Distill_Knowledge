@@ -24,16 +24,16 @@ def sp_loss(teacher_feature, student_feature):
 
 class SP(Distiller):
     """ Similarity-Preserving Knowledge Distillation, ICCV2019"""
-    def __init__(self, teacher, student,
+    def __init__(self, teacher, student, combined_KD=False,
                  ce_weight=1.0, feature_weight=3000.0, temperature=None):
         super(SP, self).__init__(teacher=teacher, student=student)
 
         self.ce_weight = ce_weight
         self.feature_weight = feature_weight
         self.temperature = temperature
+        self.combined_KD = combined_KD
 
-    def forward_train(self, image, target,
-                      combined_kd=False, **kwargs):
+    def forward_train(self, image, target, **kwargs):
 
         logits_student, student_features = self.student(image)
 
@@ -59,7 +59,7 @@ class SP(Distiller):
 
         total_loss = loss_ce + loss_sp
 
-        if combined_kd:
+        if self.combined_kd:
             from KD import kd_loss
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
             loss_dict['loss_kd'] = loss_kd

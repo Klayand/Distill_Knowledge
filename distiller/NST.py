@@ -86,7 +86,7 @@ def guassian_kernel(a, b):
 class NST(Distiller):
     """ Like What You Like: Knowledge Distill via Neuron Selectivity Transfer"""
 
-    def __init__(self, teacher, student,
+    def __init__(self, teacher, student, combined_KD=False,
                  ce_weight=1.0, feature_weight=50.0, temperature=None,
                  single_stage=False, kernel_function: str='poly'):
         super(NST, self).__init__(student=student, teacher=teacher)
@@ -95,9 +95,9 @@ class NST(Distiller):
         self.temperature = temperature
         self.single_stage = single_stage
         self.kernel_function = kernel_function
+        self.combined_KD = combined_KD
 
-    def forward_train(self, image, target,
-                      combined_KD=False, **kwargs):
+    def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
 
         with torch.no_grad():
@@ -126,7 +126,7 @@ class NST(Distiller):
 
         total_loss = loss_ce + loss_nst
 
-        if combined_KD:
+        if self.combined_KD:
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)

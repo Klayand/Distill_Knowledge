@@ -91,7 +91,7 @@ def distance_wise_loss(teacher_logits, student_logits, squared=False, with_l2_no
 class DistanceWiseRKD(Distiller):
     """ Relational Knowledge Distillation for Distance-Wise function """
 
-    def __init__(self, teacher, student, ce_weight, rkd_weight,
+    def __init__(self, teacher, student, ce_weight, rkd_weight, combined_KD=False,
             temperature=None, with_l2_norm=True, squared=False):
         super(DistanceWiseRKD, self).__init__(student=student, teacher=teacher)
         self.ce_weight = ce_weight
@@ -99,9 +99,9 @@ class DistanceWiseRKD(Distiller):
         self.temperature = temperature
         self.with_l2_norm = with_l2_norm
         self.squared = squared
+        self.combined_KD = combined_KD
 
-    def forward_train(self, image, target,
-                      combined_KD=False, **kwargs):
+    def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
 
         with torch.no_grad():
@@ -124,7 +124,7 @@ class DistanceWiseRKD(Distiller):
 
         total_loss = loss_ce + loss_distance_wise
 
-        if combined_KD:
+        if self.combined_KD:
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
@@ -137,16 +137,16 @@ class DistanceWiseRKD(Distiller):
 class AngleWiseRKD(Distiller):
     """ Relational Knowledge Distillation for Angle-Wise function """
 
-    def __init__(self, teacher, student, ce_weight, rkd_weight,
+    def __init__(self, teacher, student, ce_weight, rkd_weight, combined_KD=False,
                  temperature=None, with_l2_norm=True):
         super(AngleWiseRKD, self).__init__(student=student, teacher=teacher)
         self.ce_weight = ce_weight
         self.rkd_weight = rkd_weight
         self.temperature = temperature
         self.with_l2_norm = with_l2_norm
+        self.combined_KD = combined_KD
 
-    def forward_train(self, image, target,
-                      combined_KD=False, **kwargs):
+    def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
 
         with torch.no_grad():
@@ -168,7 +168,7 @@ class AngleWiseRKD(Distiller):
 
         total_loss = loss_ce + loss_angle_wise
 
-        if combined_KD:
+        if self.combined_KD:
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)

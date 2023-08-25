@@ -3,61 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .__base_distiller import Distiller
-from.KD import KD
-
-
-def get_feature_shapes(teacher, student, input_size):
-    """
-    Get the shape of feature for each layer of teacher model or student model
-
-    Args:
-        teacher: teacher model
-        student: student model
-        input_size: the input data size, using it to get the shapes of the features
-    """
-    data = torch.randn(1, 3, *input_size)
-    with torch.no_grad():
-        # fix the parameters of student model and teacher model
-        _, teacher_features = teacher(data)
-        _, student_features = student(data)
-
-    teacher_feature_shapes = [feature.shape for feature in teacher_features['features']]
-    student_feature_shapes = [feature.shape for feature in student_features['features']]
-
-    return teacher_feature_shapes, student_feature_shapes
-
-
-class ConvReg(nn.Module):
-    """ Convolution Regression module
-
-        Todo: to make the guided layer shape equals the hint layer shape
-    """
-    def __init__(self, teacher_shape, student_shape, use_relu=True):
-        super(ConvReg, self).__init__()
-        self.use_relu = use_relu
-
-        s_N, s_C, s_H, s_W = student_shape
-        t_N, t_C, t_H, t_W = teacher_shape
-
-        # make sure the shape of teacher equals the shape of student
-        if s_H == 2 * t_H:
-            self.conv = nn.Conv2d(s_C, t_C, kernel_size=3, stride=2, padding=1)
-        elif s_H * 2 == t_H:
-            self.conv = nn.ConvTranspose2d(s_C, t_C, kernel_size=4, stride=2, padding=1)
-        elif s_H >= t_H:
-            self.conv = nn.Conv2d(s_C, t_C, kernel_size=(1 + s_H - t_H, 1 + s_H - t_W))
-        else:
-            raise NotImplemented("student size {}, teacher size {}".format(s_H, t_H))
-
-        self.bn = nn.BatchNorm2d(t_C)
-        self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x):
-        x = self.conv(x)
-        if self.use_relu:
-            return self.relu(self.bn(x))
-        else:
-            return self.bn(x)
+from .utils import ConvReg, get_feature_shapes
 
 
 class FitNet(Distiller):
@@ -68,9 +14,9 @@ class FitNet(Distiller):
         but you can use the adaptive pooling layer to make sure the shape the same
     """
 
-    def __init__(self, student, teacher, ce_weight=1.0,
+    def __init__(self, student, teacher, combined_KD=False, ce_weight=1.0,
                  feature_weight=100.0, hint_layer=2, with_l2_norm=False,
-                 input_size=(32, 32), temperature=None,):
+                 input_size=(32, 32), temperature=None):
         super(FitNet, self).__init__(student=student, teacher=teacher)
 
         self.ce_weight = ce_weight
@@ -80,6 +26,7 @@ class FitNet(Distiller):
         self.hint_layer = hint_layer
         self.temperature = temperature
         self.input_size = input_size
+        self.combined_KD= combined_KD
 
         self.teacher_feature_shapes, self.student_feature_shapes = get_feature_shapes(self.teacher,
                                                                                       self.student,
@@ -91,8 +38,7 @@ class FitNet(Distiller):
 
         self.with_l2_norm = with_l2_norm
 
-    def forward_train(self, image, target,
-                      combined_KD=False, **kwargs):
+    def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
 
         with torch.no_grad():
@@ -135,7 +81,7 @@ class FitNet(Distiller):
 
         total_loss = loss_ce + loss_mse
 
-        if combined_KD:
+        if self.combined_KD:
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
@@ -144,17 +90,12 @@ class FitNet(Distiller):
 
         return logits_student, loss_dict, total_loss
 
+    def get_learnable_parameters(self):
+        return super().get_learnable_parameters() + list(self.conv_reg.parameters())
 
-
-
-
-
-
-
-
-
-
-
-
-
+    def get_extra_parameters(self):
+        num_parameters = 0
+        for param in self.conv_reg.parameters():
+            num_parameters += param.numel()
+        return num_parameters
 

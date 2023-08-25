@@ -6,7 +6,7 @@ from .__base_distiller import Distiller
 
 
 def activation_max(f_t, f_s, p):
-    # N, C, H, W ---> N, H, W
+    # N, C, H, W ---> N, H, W ---> N,H*W*C
     f_t_max = torch.max(torch.abs(f_t).pow(p), dim=1).values.reshape(f_t.shape[0], -1)
     f_s_max = torch.max(torch.abs(f_s).pow(p), dim=1).values.reshape(f_s.shape[0], -1)
 
@@ -93,7 +93,7 @@ def gradient_based_loss(input_data, target, teacher_net, student_net, at_method)
 class AT(Distiller):
     """  Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer """
 
-    def __init__(self, teacher, student,
+    def __init__(self, teacher, student, combined_KD=False,
                 ce_weight=1.0, feature_weight=1000.0, temperature=None, p=2,
                 single_stage=False, at_method: str= 'activation_sum'):
         super(AT, self).__init__(teacher=teacher, student=student)
@@ -103,9 +103,9 @@ class AT(Distiller):
         self.single_stage = single_stage
         self.at_method = at_method
         self.p = p
+        self.combined_KD = combine_KD
 
-    def forward_train(self, image, target,
-                    combined_KD=False, **kwargs):
+    def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
 
         with torch.no_grad():
@@ -133,7 +133,7 @@ class AT(Distiller):
 
         total_loss = loss_ce + loss_at
 
-        if combined_KD:
+        if self.combined_KD:
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)

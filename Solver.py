@@ -218,14 +218,14 @@ class Solver():
 
 if __name__ == '__main__':
     import torchvision
-    from backbone import resnet8, resnet14, wrn_16_1
-    from distiller import FitNet
+    from backbone import resnet8, resnet14, wrn_16_1, mobilenetV2
+    from distiller import ChannelWiseDivergence
     from data import get_CIFAR100_train, get_CIFAR100_test
 
-    student_model = resnet8(num_classes=100)
-    teacher_model = wrn_16_1(num_classes=100)
+    student_model = resnet14(num_classes=100)
+    teacher_model = resnet8(num_classes=100)
 
-    distiller = FitNet(teacher=teacher_model, student=student_model, with_l2_norm=True)
+    distiller = ChannelWiseDivergence(teacher=teacher_model, student=student_model, combined_KD=True)
 
     train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
     test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
