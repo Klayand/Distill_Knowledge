@@ -38,7 +38,7 @@ class ALRS():
                     print(f"now lr = {now_lr}")
 
             else:
-                now_lr = self.optimizer.params[0]['lr']
+                now_lr = self.optimizer.param_groups[0]['lr']
                 print(f'now lr = {now_lr}')
 
             self.last_loss = loss

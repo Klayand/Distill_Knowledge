@@ -7,6 +7,11 @@ from torch.utils.data import DataLoader
 from optimizer import SGD, Adam
 from scheduler import ALRS, CosineLRS
 
+BEST_ACC_DICT = {
+            'teacher_acc': -999,
+            'student_acc': -999,
+            'distillation_acc': -999
+        }
 
 
 def ce_loss(x, y):
@@ -15,7 +20,8 @@ def ce_loss(x, y):
 
 
 class Solver():
-    def __init__(self, teacher: nn.Module, student: nn.Module, distiller: nn.Module,
+    def __init__(self, teacher: nn.Module, student: nn.Module or None = None,
+                 distiller: nn.Module or None = None,
                  loss_function: Callable or None = None,
                  optimizer: torch.optim.Optimizer or None = None,
                  scheduler: Callable or None = None,
@@ -35,6 +41,8 @@ class Solver():
 
         self.device = device
 
+        self.teacher_path = None
+
         # initialization
         self.init()
 
@@ -51,6 +59,7 @@ class Solver():
               validation_loader: DataLoader,
               total_epoch=500,
               fp16=False,
+              is_student=False
               ):
 
         from torch.cuda.amp import autocast, GradScaler
@@ -124,13 +133,23 @@ class Solver():
                 validation_loss /= len(validation_loader)
                 validation_acc /= len(validation_loader)
 
+                if is_student:
+                    if validation_acc > BEST_ACC_DICT['student_acc']:
+                        BEST_ACC_DICT['student_acc'] = validation_acc
+                else:
+                    BEST_ACC_DICT['teacher_acc'] = validation_acc
+
             self.teacher_scheduler.step(train_loss, epoch)
 
             print(f'epoch {epoch}, train_loss = {train_loss}, train_acc = {train_acc}')
             print(f'epoch {epoch}, validation_loss = {validation_loss}, validation_acc = {validation_acc}')
             print('*' * 100)
 
-            torch.save(self.teacher.state_dict(), 'teacher.pth')
+            if is_student:
+                torch.save(self.teacher.state_dict(), 'student_baseline.pth')
+            else:
+                torch.save(self.teacher.state_dict(), 'teacher.pth')
+                self.teacher_path = 'teacher.pth'
 
         return self.teacher
 
@@ -147,6 +166,9 @@ class Solver():
         for epoch in range(1, total_epoch + 1):
             train_loss, validation_loss, validation_acc = 0, 0, 0
 
+            if self.teacher_path:
+                self.teacher.load_state_dict(torch.load(self.teacher_path))
+
             # train teacher model
             self.teacher.eval()
             self.student.train()
@@ -156,10 +178,10 @@ class Solver():
                 x, y = x.to(self.device), y.to(self.device)
                 if fp16:
                     with autocast():
-                            student_logits, losses_dict, loss = distiller.forward_train(image=x, target=y)
+                        student_logits, losses_dict, loss = distiller.forward_train(image=x, target=y)
 
                 else:
-                        student_logits, losses_dict, loss = distiller.forward_train(image=x, target=y)
+                    student_logits, losses_dict, loss = distiller.forward_train(image=x, target=y)
 
                 train_loss += loss.item()
 
@@ -205,9 +227,12 @@ class Solver():
                 validation_loss /= len(validation_loader)
                 validation_acc /= len(validation_loader)
 
+                if validation_acc > BEST_ACC_DICT['distillation_acc']:
+                    BEST_ACC_DICT['distillation_acc'] = validation_acc
+
             self.student_scheduler.step(train_loss, epoch)
 
-            print(f'epoch {epoch}, train_loss = {train_loss}')
+            print(f'epoch {epoch}, distill_loss = {train_loss}')
             print(f'epoch {epoch}, validation_loss = {validation_loss}, validation_acc = {validation_acc}')
             print('*' * 100)
 
@@ -218,23 +243,36 @@ class Solver():
 
 if __name__ == '__main__':
     import torchvision
-    from backbone import resnet8, resnet14, wrn_16_1, mobilenetV2
-    from distiller import ChannelWiseDivergence
+    from backbone import resnet32, resnet14
+    from distiller import CenterKernelAnalysisRKD, DistanceWiseRKD
     from data import get_CIFAR100_train, get_CIFAR100_test
 
     student_model = resnet14(num_classes=100)
-    teacher_model = resnet8(num_classes=100)
+    teacher_model = resnet32(num_classes=100)
 
-    distiller = ChannelWiseDivergence(teacher=teacher_model, student=student_model, combined_KD=True)
+    distiller = CenterKernelAnalysisRKD(teacher=teacher_model, student=student_model).to('cuda')
 
-    train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
-    test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
+    train_loader = get_CIFAR100_train(batch_size=128, num_workers=8, augment=True)
+    test_loader = get_CIFAR100_test(batch_size=128, num_workers=8)
 
     w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
-    w.train(train_loader, test_loader, total_epoch=1)
+    w.train(train_loader, test_loader, total_epoch=200)
 
     print()
     print("Teacher model training completed!")
 
-    w.distill(train_loader, test_loader, total_epoch=1)
+    # for student baseline
+    s = Solver(teacher=student_model)
+    s.train(train_loader, test_loader, total_epoch=200)
+    print()
+    print("Student model without distillation training completed!")
+
+    w.distill(train_loader, test_loader, total_epoch=200)
+
+    print()
+    print("Student model with distillation training completed!")
+
+    print('-'*100)
+    print(f"teahcer acc: {BEST_ACC_DICT['teacher']}, student acc: {BEST_ACC_DICT['student']}, "
+          f"distillation acc: {BEST_ACC_DICT['distillation_acc']}")
 
