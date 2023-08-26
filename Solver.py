@@ -256,23 +256,25 @@ if __name__ == '__main__':
     test_loader = get_CIFAR100_test(batch_size=128, num_workers=8)
 
     w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
-    w.train(train_loader, test_loader, total_epoch=200)
-
+    w.train(train_loader, test_loader, total_epoch=2)
     print()
     print("Teacher model training completed!")
+    print()
 
     # for student baseline
-    s = Solver(teacher=student_model)
-    s.train(train_loader, test_loader, total_epoch=200)
+    student_baseline = resnet14(num_classes=100)
+    s = Solver(teacher=student_baseline, student=teacher_model, distiller=distiller)
+    s.train(train_loader, test_loader, total_epoch=2, is_student=True)
     print()
     print("Student model without distillation training completed!")
+    print()
 
-    w.distill(train_loader, test_loader, total_epoch=200)
+    w.distill(train_loader, test_loader, total_epoch=2)
 
     print()
     print("Student model with distillation training completed!")
 
     print('-'*100)
-    print(f"teahcer acc: {BEST_ACC_DICT['teacher']}, student acc: {BEST_ACC_DICT['student']}, "
+    print(f"teahcer acc: {BEST_ACC_DICT['teacher_acc']}, student acc: {BEST_ACC_DICT['student_acc']}, "
           f"distillation acc: {BEST_ACC_DICT['distillation_acc']}")
 
