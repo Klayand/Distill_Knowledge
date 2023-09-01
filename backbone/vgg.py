@@ -19,6 +19,15 @@ model_urls = {
     "vgg19": "https://download.pytorch.org/models/vgg19-dcbb9e9d.pth",
 }
 
+cfg = {
+    "A": [[64], [128], [256, 256], [512, 512], [512, 512]],
+    "B": [[64, 64], [128, 128], [256, 256], [512, 512], [512, 512]],
+    "D": [[64, 64], [128, 128], [256, 256, 256], [512, 512, 512], [512, 512, 512]],
+    "E": [[64, 64], [128, 128], [256, 256, 256, 256], [512, 512, 512, 512], [512, 512, 512, 512]],
+    "S": [[64], [128], [256], [512], [512]],
+}
+
+
 
 class Normalizer4CRD(nn.Module):
     def __init__(self, linear, power=2):
@@ -119,6 +128,8 @@ class VGG(nn.Module):
         features['features'] = [f0, f1, f2, f3, f4]
         features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
         features['avgpool_feature'] = avg
+
+        return x, features
 
     @staticmethod
     def _make_layers(cfg, batch_norm=False, in_channels=3, norm_layer=nn.BatchNorm2d):

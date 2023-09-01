@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from .__base_distiller import Distiller
 
 
-def CenterKernelAnalysis(X, Y, with_l2_norm):
+def CenterKernelAlignment(X, Y, with_l2_norm):
     """ Compute the CKA similarity betweem samples"""
     # Compute Gram matrix
     gram_X = torch.matmul(X, X.t())
@@ -39,7 +39,7 @@ def cka_loss(teacher_logits, student_logits, with_l2_norm):
     assert N_s == N_t   # when use cka, you need to make sure N the same
 
     # get a similarity score between teacher and student
-    similarity_martix = CenterKernelAnalysis(teacher_logits, student_logits, with_l2_norm)
+    similarity_martix = CenterKernelAlignment(teacher_logits, student_logits, with_l2_norm)
 
     # maximize the likelihood of it
     return -similarity_martix
@@ -213,10 +213,10 @@ class AngleWiseRKD(Distiller):
         return logits_student, loss_dict, total_loss
     
 
-class CenterKernelAnalysisRKD(Distiller):
-    """ Center Kernel Analysis for Relational Knowledge Distillation"""
+class CenterKernelAlignmentRKD(Distiller):
+    """ Center Kernel Alignment for Relational Knowledge Distillation"""
     def __init__(self, teacher, student, ce_weight=1.0, rkd_weight=25, combined_KD=False, temperature=None, with_l2_norm=True):
-        super(CenterKernelAnalysisRKD, self).__init__(teacher=teacher, student=student)
+        super(CenterKernelAlignmentRKD, self).__init__(teacher=teacher, student=student)
         self.ce_weight = ce_weight
         self.rkd_weight = rkd_weight
         self.temperature = temperature

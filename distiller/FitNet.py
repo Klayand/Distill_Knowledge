@@ -15,7 +15,7 @@ class FitNet(Distiller):
     """
 
     def __init__(self, student, teacher, combined_KD=False, ce_weight=1.0,
-                 feature_weight=100.0, hint_layer=2, with_l2_norm=False,
+                 feature_weight=50.0, hint_layer=2, with_l2_norm=False,
                  input_size=(32, 32), temperature=None):
         super(FitNet, self).__init__(student=student, teacher=teacher)
 
@@ -60,13 +60,13 @@ class FitNet(Distiller):
             # using 'regression_student_feature' and 'teacher_feature_hint' is like FitNets
 
             s_N, s_C, s_H, s_W = regression_student_feature.shape
-            regression_student_feature = regression_student_feature.reshape(s_N, s_C, -1)
-            regression_student_feature_normalized = F.normalize(regression_student_feature, dim=2)
+            regression_student_feature_reshape = regression_student_feature.reshape(s_N, s_C, -1)
+            regression_student_feature_normalized = F.normalize(regression_student_feature_reshape, dim=2)
             regression_student_feature = regression_student_feature_normalized.reshape(s_N, s_C, s_H, s_W)
 
             t_N, t_C, t_H, t_W = teacher_feature_hint.shape
-            teacher_feature_hint = teacher_feature_hint.reshape(t_N, t_C, -1)
-            teacher_feature_hint_normalized = F.normalize(teacher_feature_hint, dim=2)
+            teacher_feature_hint_reshape = teacher_feature_hint.reshape(t_N, t_C, -1)
+            teacher_feature_hint_normalized = F.normalize(teacher_feature_hint_reshape, dim=2)
             teacher_feature_hint = teacher_feature_hint_normalized.reshape(t_N, t_C, t_H, t_W)
 
 

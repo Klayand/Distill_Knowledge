@@ -19,8 +19,8 @@ def single_stage_loss(teacher_feature, student_feature, temperature):
     N_s, C_s, H_s, W_s = student_feature.shape
     N_t, C_t, H_t, W_t = teacher_feature.shape
 
-    teacher_feature_norm = F.softmax(teacher_feature.reshape(N_t, C_t, -1) / temperature, dim=1)
-    student_feature_norm = F.log_softmax(student_feature.reshape(N_s, C_s, -1) / temperature, dim=1)
+    teacher_feature_norm = F.softmax(teacher_feature.reshape(N_t, C_t, -1) / temperature, dim=2)
+    student_feature_norm = F.log_softmax(student_feature.reshape(N_s, C_s, -1) / temperature, dim=2)
 
     if C_t != C_s:
         conv_layer = nn.Conv2d(C_t, C_s, kernel_size=(1, 1))

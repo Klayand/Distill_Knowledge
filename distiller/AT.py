@@ -103,7 +103,7 @@ class AT(Distiller):
         self.single_stage = single_stage
         self.at_method = at_method
         self.p = p
-        self.combined_KD = combine_KD
+        self.combined_KD = combined_KD
 
     def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)

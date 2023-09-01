@@ -38,7 +38,7 @@ class SP(Distiller):
         logits_student, student_features = self.student(image)
 
         with torch.no_grad():
-            if combined_kd:
+            if self.combined_kd:
                 if self.temperature:
                     logits_teacher, teacher_features = self.teacher(image, target)
                 else:
