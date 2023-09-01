@@ -51,15 +51,15 @@ def single_stage_loss(f_t, f_s, at_method, p):
             min_size = min(s_W, s_H)
             f_t = F.adaptive_avg_pool2d(f_t, (min_size, min_size))
 
-        if at_method == 'activation_sum':
-            assert p >= 1
-            f_t_q, f_s_q = activation_sum(f_t, f_s, p)
-        elif at_method == 'activation_max':
-            assert p >= 1
-            f_t_q, f_s_q = activation_max(f_t, f_s, p)
+    if at_method == 'activation_sum':
+        assert p >= 1
+        f_t_q, f_s_q = activation_sum(f_t, f_s, p)
+    elif at_method == 'activation_max':
+        assert p >= 1
+        f_t_q, f_s_q = activation_max(f_t, f_s, p)
 
-        f_t_sum_normalized = F.normalize(f_t_q)
-        f_s_sum_normalized = F.normalize(f_s_q)
+    f_t_sum_normalized = F.normalize(f_t_q)
+    f_s_sum_normalized = F.normalize(f_s_q)
 
     result = (f_t_sum_normalized - f_s_sum_normalized).pow(2).mean()
 
