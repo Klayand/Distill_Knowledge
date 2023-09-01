@@ -7,6 +7,7 @@ from .RKD import DistanceWiseRKD, AngleWiseRKD, CenterKernelAlignmentRKD
 from .CWD import ChannelWiseDivergence
 from .FitNet import FitNet
 from .ReviewKD import ReviewKD
+from .DKD import DKD
 
 __all__ = ['Distiller',
            'KD',
@@ -18,4 +19,5 @@ __all__ = ['Distiller',
            'CenterKernelAlignmentRKD',
            'ChannelWiseDivergence',
            'FitNet',
-           'ReviewKD']
+           'ReviewKD',
+           'DKD']
