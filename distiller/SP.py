@@ -57,8 +57,9 @@ class SP(Distiller):
         # Compute loss
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
         loss_sp = self.feature_weight * sp_loss(
-            teacher_feature=teacher_features['features'][-1],
-            student_feature=student_features['features'][-1]
+            teacher_feature=teacher_features['features'][-1] if self.single_stage else teacher_features['features'][1:],
+            student_feature=student_features['features'][-1] if self.single_stage else student_features['features'][1:],
+            single_stage=self.single_stage
         )
 
         loss_dict = {
