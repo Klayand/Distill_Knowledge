@@ -1,6 +1,7 @@
 """
     Original author: mmrazor
     verified by Zikai Zhou
+    introduce intra loss and inter loss. But for inter loss, it considers all sample similarity.
 """
 import numpy as np
 import torch

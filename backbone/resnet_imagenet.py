@@ -254,39 +254,49 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, is_feat=False):
+    def forward(self, x, is_feat=False, is_srrl=None):
         # See note [TorchScript super()]
-        x = self.conv1(x)
-        x = self.bn1(x)
-        f0 = x
 
-        x = self.relu(x)
-        x = self.maxpool(x)
+        if not is_srrl is None:
+            x = self.avgpool(is_srrl)
+            x = torch.flatten(x, 1)
 
-        x, f1_pre = self.layer1(x)
-        f1 = x
+            out = self.fc(x)
 
-        x, f2_pre = self.layer2(x)
-        f2 = x
+            return out
 
-        x, f3_pre = self.layer3(x)
-        f3 = x
+        else:
+            x = self.conv1(x)
+            x = self.bn1(x)
+            f0 = x
 
-        x, f4_pre = self.layer4(x)
-        f4 = x
+            x = self.relu(x)
+            x = self.maxpool(x)
 
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        avg = x
+            x, f1_pre = self.layer1(x)
+            f1 = x
 
-        out = self.fc(x)
+            x, f2_pre = self.layer2(x)
+            f2 = x
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3, f4]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
-        features['avgpool_feature'] = avg
+            x, f3_pre = self.layer3(x)
+            f3 = x
 
-        return out, features
+            x, f4_pre = self.layer4(x)
+            f4 = x
+
+            x = self.avgpool(x)
+            x = torch.flatten(x, 1)
+            avg = x
+
+            out = self.fc(x)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3, f4]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 def resnet18_imagenet(**kwargs):

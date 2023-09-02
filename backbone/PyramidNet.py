@@ -346,39 +346,48 @@ class PyramidNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        f0 = x
+    def forward(self, x, is_srrl=None):
 
-        x = self.maxpool(x)
+        if not is_srrl is None:
+            x = self.avgpool(is_srrl)
+            x = x.view(x.size(0), -1)
 
-        x = self.layer1(x)
-        f1 = x
+            out = self.fc(x)
+            return out
 
-        x = self.layer2(x)
-        f2 = x
+        else:
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            f0 = x
 
-        x = self.layer3(x)
-        f3 = x
+            x = self.maxpool(x)
 
-        x = self.bn_final(x)
+            x = self.layer1(x)
+            f1 = x
 
-        final_pre = x
-        x = self.relu_final(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        avg = x
+            x = self.layer2(x)
+            f2 = x
 
-        out = self.fc(x)
+            x = self.layer3(x)
+            f3 = x
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3]
-        features['preact_features'] = [f0, final_pre]
-        features['avgpool_feature'] = avg
+            x = self.bn_final(x)
 
-        return out, features
+            final_pre = x
+            x = self.relu_final(x)
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            avg = x
+
+            out = self.fc(x)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3]
+            features['preact_features'] = [f0, final_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 def pyramidnet164(bottleneck=True, num_models=-1, **kwargs):

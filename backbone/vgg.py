@@ -84,52 +84,62 @@ class VGG(nn.Module):
         bn4 = self.block4[-1]
         return [bn1, bn2, bn3, bn4]
 
-    def forward(self, x, is_feat=False, preact=False):
-        h = x.shape[2]
-        x = F.relu(self.block0(x))
-        f0 = x
+    def forward(self, x, is_feat=False, preact=False, is_srrl=None):
 
-        x = self.pool0(x)
-        x = self.block1(x)
-        f1_pre = x
+        if not is_srrl is None:
+            x = self.pool4(is_srrl)
+            x = x.view(x.size(0), -1)
 
-        x = F.relu(x)
-        f1 = x
+            x = self.classifier(x)
 
-        x = self.pool1(x)
-        x = self.block2(x)
-        f2_pre = x
+            return x
 
-        x = F.relu(x)
-        f2 = x
+        else:
+            h = x.shape[2]
+            x = F.relu(self.block0(x))
+            f0 = x
 
-        x = self.pool2(x)
-        x = self.block3(x)
-        f3_pre = x
+            x = self.pool0(x)
+            x = self.block1(x)
+            f1_pre = x
 
-        x = F.relu(x)
-        f3 = x
+            x = F.relu(x)
+            f1 = x
 
-        if h == 64:
-            x = self.pool3(x)
-        x = self.block4(x)
-        f4_pre = x
+            x = self.pool1(x)
+            x = self.block2(x)
+            f2_pre = x
 
-        x = F.relu(x)
-        f4 = x
+            x = F.relu(x)
+            f2 = x
 
-        x = self.pool4(x)
-        x = x.view(x.size(0), -1)
-        avg = x
+            x = self.pool2(x)
+            x = self.block3(x)
+            f3_pre = x
 
-        x = self.classifier(x)
+            x = F.relu(x)
+            f3 = x
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3, f4]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
-        features['avgpool_feature'] = avg
+            if h == 64:
+                x = self.pool3(x)
+            x = self.block4(x)
+            f4_pre = x
 
-        return x, features
+            x = F.relu(x)
+            f4 = x
+
+            x = self.pool4(x)
+            x = x.view(x.size(0), -1)
+            avg = x
+
+            x = self.classifier(x)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3, f4]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+            features['avgpool_feature'] = avg
+
+            return x, features
 
     @staticmethod
     def _make_layers(cfg, batch_norm=False, in_channels=3, norm_layer=nn.BatchNorm2d):

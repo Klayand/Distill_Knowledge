@@ -161,30 +161,40 @@ class ShuffleNetV2(nn.Module):
     def get_bn_before_relu(self):
         raise NotImplementedError('ShuffleNetV2 currently is not supported for "Overhaul" teacher2')
 
-    def forward(self, x, is_feat=False, preact=False):
-        out = F.relu(self.bn1(self.conv1(x)))
-        # out = F.max_pool2d(out, 3, stride=2, padding=1)
-        f0 = out
-        out, f1_pre = self.layer1(out)
-        f1 = out
-        out, f2_pre = self.layer2(out)
-        f2 = out
-        out, f3_pre = self.layer3(out)
-        f3 = out
-        out = F.relu(self.bn2(self.conv2(out)))
-        f4 = out
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        avg = out
+    def forward(self, x, is_feat=False, preact=False, is_srrl=None):
 
-        out = self.linear(out)
+        if not is_srrl is None:
+            out = F.avg_pool2d(is_srrl, 4)
+            out = out.view(out.size(0), -1)
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3, f4]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
-        features['avgpool_feature'] = avg
+            out = self.linear(out)
 
-        return out, features
+            return out
+
+        else:
+            out = F.relu(self.bn1(self.conv1(x)))
+            # out = F.max_pool2d(out, 3, stride=2, padding=1)
+            f0 = out
+            out, f1_pre = self.layer1(out)
+            f1 = out
+            out, f2_pre = self.layer2(out)
+            f2 = out
+            out, f3_pre = self.layer3(out)
+            f3 = out
+            out = F.relu(self.bn2(self.conv2(out)))
+            f4 = out
+            out = F.avg_pool2d(out, 4)
+            out = out.view(out.size(0), -1)
+            avg = out
+
+            out = self.linear(out)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3, f4]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 configs = {

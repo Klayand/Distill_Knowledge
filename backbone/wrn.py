@@ -126,31 +126,40 @@ class WideResNet(nn.Module):
 
         return [bn1, bn2, bn3]
 
-    def forward(self, x, is_feat=False, preact=False):
-        out = self.conv1(x)
-        f0 = out
-        out = self.block1(out)
-        f1 = out
-        out = self.block2(out)
-        f2 = out
-        out = self.block3(out)
-        f3 = out
-        out = self.relu(self.bn1(out))
-        out = F.avg_pool2d(out, 8)
-        out = out.view(-1, self.nChannels)
-        avg = out
-        out = self.fc(out)
+    def forward(self, x, is_feat=False, preact=False, is_srrl=None):
 
-        f1_pre = self.block2.layer[0].bn1(f1)
-        f2_pre = self.block3.layer[0].bn1(f2)
-        f3_pre = self.bn1(f3)
+        if not is_srrl is None:
+            out = F.avg_pool2d(is_srrl, 8)
+            out = out.view(-1, self.nChannels)
+            out = self.fc(out)
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
-        features['avgpool_feature'] = avg
+            return out
 
-        return out, features
+        else:
+            out = self.conv1(x)
+            f0 = out
+            out = self.block1(out)
+            f1 = out
+            out = self.block2(out)
+            f2 = out
+            out = self.block3(out)
+            f3 = out
+            out = self.relu(self.bn1(out))
+            out = F.avg_pool2d(out, 8)
+            out = out.view(-1, self.nChannels)
+            avg = out
+            out = self.fc(out)
+
+            f1_pre = self.block2.layer[0].bn1(f1)
+            f2_pre = self.block3.layer[0].bn1(f2)
+            f3_pre = self.bn1(f3)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 def wrn(**kwargs):

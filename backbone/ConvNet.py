@@ -28,39 +28,48 @@ class ConvNet(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.norm1(x)
-        f0 = x
-        x = self.relu1(x)
+    def forward(self, x, is_srrl=None):
 
-        x = self.maxpool1(x)
-        f0_max = x
+        if not is_srrl is None:
+            x = self.fc1(is_srrl)
+            x = self.relu3(x)
+            x = self.fc2(x)
 
-        x = self.conv2(x)
-        x = self.norm2(x)
-        f1_pre = x
-        x = self.relu2(x)
-        f1 = x
+            return x
 
-        x = self.maxpool2(x)
-        f1_max = x
+        else:
+            x = self.conv1(x)
+            x = self.norm1(x)
+            f0 = x
+            x = self.relu1(x)
 
-        x = x.view(x.size(0), -1)
-        f2 = x
+            x = self.maxpool1(x)
+            f0_max = x
 
-        x = self.fc1(x)
-        x = self.relu3(x)
-        x = self.fc2(x)
+            x = self.conv2(x)
+            x = self.norm2(x)
+            f1_pre = x
+            x = self.relu2(x)
+            f1 = x
 
-        out = self.softmax(x)
+            x = self.maxpool2(x)
+            f1_max = x
 
-        features = {}
-        features['features'] = [f0, f1, f2]
-        features['preact_features'] = [f0, f1_pre]
-        features['max_pooling'] = [f0_max, f1_max]
+            x = x.view(x.size(0), -1)
+            f2 = x
 
-        return out, features
+            x = self.fc1(x)
+            x = self.relu3(x)
+            x = self.fc2(x)
+
+            out = self.softmax(x)
+
+            features = {}
+            features['features'] = [f0, f1, f2]
+            features['preact_features'] = [f0, f1_pre]
+            features['max_pooling'] = [f0_max, f1_max]
+
+            return out, features
 
 
 def convnet(dim, norm_layer, num_classes):

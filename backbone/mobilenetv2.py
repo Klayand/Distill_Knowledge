@@ -136,38 +136,50 @@ class MobileNetV2(nn.Module):
         feat_m.append(self.blocks)
         return feat_m
 
-    def forward(self, x, is_feat=False, preact=False):
-        out = self.conv1(x)
-        f0 = out
-        out = self.blocks[0](out)
-        out = self.blocks[1](out)
-        f1 = out
+    def forward(self, x, is_feat=False, preact=False, is_srrl=None):
 
-        out = self.blocks[2](out)
-        f2 = out
+        if not is_srrl is None:
+            if not self.remove_avg:
+                out = self.avgpool(is_srrl)
+            out = out.view(out.size(0), -1)
 
-        out = self.blocks[3](out)
-        out = self.blocks[4](out)
-        f3 = out
+            out = self.classifier(out)
 
-        out = self.blocks[5](out)
-        out = self.blocks[6](out)
-        f4 = out
+            return out
 
-        out = self.conv2(out)
+        else:
 
-        if not self.remove_avg:
-            out = self.avgpool(out)
-        out = out.view(out.size(0), -1)
-        avg = out
+            out = self.conv1(x)
+            f0 = out
+            out = self.blocks[0](out)
+            out = self.blocks[1](out)
+            f1 = out
 
-        out = self.classifier(out)
+            out = self.blocks[2](out)
+            f2 = out
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3, f4]
-        features['avgpool_feature'] = avg
+            out = self.blocks[3](out)
+            out = self.blocks[4](out)
+            f3 = out
 
-        return out, features
+            out = self.blocks[5](out)
+            out = self.blocks[6](out)
+            f4 = out
+
+            out = self.conv2(out)
+
+            if not self.remove_avg:
+                out = self.avgpool(out)
+            out = out.view(out.size(0), -1)
+            avg = out
+
+            out = self.classifier(out)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3, f4]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
     def get_stage_channels(self):
         return self.stage_channels

@@ -167,27 +167,36 @@ class ResNet(nn.Module):
             raise NotImplementedError()
         return pre
 
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        f0 = out
-        out, f1_pre = self.layer1(out)
-        f1 = out
-        out, f2_pre = self.layer2(out)
-        f2 = out
-        out, f3_pre = self.layer3(out)
-        f3 = out
-        out, f4_pre = self.layer4(out)
-        f4 = out
-        out = self.avgpool(out)
-        avg = out.reshape(out.size(0), -1)
-        out = self.linear(avg)
+    def forward(self, x, is_srrl=None):
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3, f4]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
-        features['avgpool_feature'] = avg
+        if not is_srrl is None:
+            out = self.avgpool(is_srrl)
+            avg = out.reshape(out.size(0), -1)
+            out = self.linear(avg)
 
-        return out, features
+            return out
+
+        else:
+            out = F.relu(self.bn1(self.conv1(x)))
+            f0 = out
+            out, f1_pre = self.layer1(out)
+            f1 = out
+            out, f2_pre = self.layer2(out)
+            f2 = out
+            out, f3_pre = self.layer3(out)
+            f3 = out
+            out, f4_pre = self.layer4(out)
+            f4 = out
+            out = self.avgpool(out)
+            avg = out.reshape(out.size(0), -1)
+            out = self.linear(avg)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3, f4]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 def ResNet18(**kwargs):

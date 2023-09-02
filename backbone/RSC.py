@@ -220,125 +220,135 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, gt=None, epoch=None):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        f0 = x
-        x = self.maxpool(x)
+    def forward(self, x, gt=None, epoch=None, is_srrl=None):
 
-        x, f1_pre = self.layer1(x)
-        f1 = x
+        if not is_srrl is None:
+            x = self.avgpool(is_srrl)
+            x = torch.flatten(x, 1)
 
-        x, f2_pre = self.layer2(x)
-        f2 = x
+            out = self.fc(x)
 
-        x, f3_pre = self.layer3(x)
-        f3 = x
+            return out
 
-        x, f4_pre = self.layer4(x)
-        f4 = x
+        else:
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            f0 = x
+            x = self.maxpool(x)
 
-        if self.training:
-            if epoch <= 18:
-                percent = 1/6.0
-            elif epoch <= 38:
-                percent = 1/5.5
-            elif epoch <= 58:
-                percent = 1/5.0
-            elif epoch <= 78:
-                percent = 1/4.5
-            else:
-                percent = 1/4.0
+            x, f1_pre = self.layer1(x)
+            f1 = x
 
-            self.eval()
-            x_new = x.clone().detach()
-            x_new = Variable(x_new.data, requires_grad=True)
-            x_new_view = self.avgpool(x_new)
-            x_new_view = x_new_view.view(x_new_view.size(0), -1)
-            output = self.fc(x_new_view)
-            class_num = output.shape[1]
-            index = gt
-            num_rois = x_new.shape[0]
-            num_channel = x_new.shape[1]
-            H = x_new.shape[2]
-            HW = H * H
-            one_hot = torch.zeros((1), dtype=torch.float32).cuda()
-            one_hot = Variable(one_hot, requires_grad=False)
-            sp_i = torch.ones([2, num_rois]).long()
-            sp_i[0, :] = torch.arange(num_rois)
-            sp_i[1, :] = index
-            sp_v = torch.ones([num_rois])
-            one_hot_sparse = torch.sparse.FloatTensor(sp_i, sp_v, torch.Size([num_rois, class_num])).to_dense().cuda()
-            one_hot_sparse = Variable(one_hot_sparse, requires_grad=False)
-            one_hot = torch.sum(output * one_hot_sparse)
-            self.zero_grad()
-            one_hot.backward()
-            grads_val = x_new.grad.clone().detach()
-            grad_channel_mean = torch.mean(grads_val.view(num_rois, num_channel, -1), dim=2)
-            grad_channel_mean = grad_channel_mean.view(num_rois, num_channel, 1, 1)
-            spatial_mean = torch.sum(x_new * grad_channel_mean, 1)
-            spatial_mean = spatial_mean.view(num_rois, HW)
-            self.zero_grad()
+            x, f2_pre = self.layer2(x)
+            f2 = x
 
-            th_mask_value = torch.sort(spatial_mean, dim=1, descending=True)[0][:, int(HW/2.0)]
-            th_mask_value = th_mask_value.view(num_rois, 1).expand(num_rois, HW)
-            mask_all_cuda = torch.where(spatial_mean > th_mask_value, torch.zeros(spatial_mean.shape).cuda(),
-                                        torch.ones(spatial_mean.shape).cuda())
-            mask_all = mask_all_cuda.detach().cpu().numpy()
-            spatial_drop_num = int(HW/3.0)
-            for q in range(num_rois):
-                mask_all_temp = np.ones((HW), dtype=np.float32)
-                zero_index = np.where(mask_all[q, :] == 0)[0]
-                num_zero_index = zero_index.size
-                if num_zero_index >= spatial_drop_num:
-                    dumy_index = npr.choice(zero_index, size=spatial_drop_num, replace=False)
+            x, f3_pre = self.layer3(x)
+            f3 = x
+
+            x, f4_pre = self.layer4(x)
+            f4 = x
+
+            if self.training:
+                if epoch <= 18:
+                    percent = 1/6.0
+                elif epoch <= 38:
+                    percent = 1/5.5
+                elif epoch <= 58:
+                    percent = 1/5.0
+                elif epoch <= 78:
+                    percent = 1/4.5
                 else:
-                    zero_index = np.arange(49)
-                    dumy_index = npr.choice(zero_index, size=spatial_drop_num, replace=False)
-                mask_all_temp[dumy_index] = 0
-                mask_all[q, :] = mask_all_temp
-            mask_all = torch.from_numpy(mask_all.reshape(num_rois, H, H)).cuda()
-            mask_all = mask_all.view(num_rois, 1, H, H)
+                    percent = 1/4.0
 
-            cls_prob_before = F.softmax(output, dim=1)
-            x_new_view_after = x_new * mask_all
-            x_new_view_after = self.avgpool(x_new_view_after)
-            x_new_view_after = x_new_view_after.view(x_new_view_after.size(0), -1)
-            x_new_view_after = self.fc(x_new_view_after)
-            cls_prob_after = F.softmax(x_new_view_after, dim=1)
+                self.eval()
+                x_new = x.clone().detach()
+                x_new = Variable(x_new.data, requires_grad=True)
+                x_new_view = self.avgpool(x_new)
+                x_new_view = x_new_view.view(x_new_view.size(0), -1)
+                output = self.fc(x_new_view)
+                class_num = output.shape[1]
+                index = gt
+                num_rois = x_new.shape[0]
+                num_channel = x_new.shape[1]
+                H = x_new.shape[2]
+                HW = H * H
+                one_hot = torch.zeros((1), dtype=torch.float32).cuda()
+                one_hot = Variable(one_hot, requires_grad=False)
+                sp_i = torch.ones([2, num_rois]).long()
+                sp_i[0, :] = torch.arange(num_rois)
+                sp_i[1, :] = index
+                sp_v = torch.ones([num_rois])
+                one_hot_sparse = torch.sparse.FloatTensor(sp_i, sp_v, torch.Size([num_rois, class_num])).to_dense().cuda()
+                one_hot_sparse = Variable(one_hot_sparse, requires_grad=False)
+                one_hot = torch.sum(output * one_hot_sparse)
+                self.zero_grad()
+                one_hot.backward()
+                grads_val = x_new.grad.clone().detach()
+                grad_channel_mean = torch.mean(grads_val.view(num_rois, num_channel, -1), dim=2)
+                grad_channel_mean = grad_channel_mean.view(num_rois, num_channel, 1, 1)
+                spatial_mean = torch.sum(x_new * grad_channel_mean, 1)
+                spatial_mean = spatial_mean.view(num_rois, HW)
+                self.zero_grad()
 
-            sp_i = torch.ones([2, num_rois]).long()
-            sp_i[0, :] = torch.arange(num_rois)
-            sp_i[1, :] = index
-            sp_v = torch.ones([num_rois])
-            one_hot_sparse = torch.sparse.FloatTensor(sp_i, sp_v, torch.Size([num_rois, class_num])).to_dense().cuda()
-            before_vector = torch.sum(one_hot_sparse * cls_prob_before, dim=1)
-            after_vector = torch.sum(one_hot_sparse * cls_prob_after, dim=1)
-            change_vector = before_vector - after_vector - 0.0001
-            change_vector = torch.where(change_vector > 0, change_vector, torch.zeros(change_vector.shape).cuda())
-            th_fg_value = torch.sort(change_vector, dim=0, descending=True)[0][int(round(float(num_rois) * percent))]
-            drop_index_fg = change_vector.gt(th_fg_value)
-            ignore_index_fg = 1 - drop_index_fg.float()
-            not_01_ignore_index_fg = ignore_index_fg.nonzero()[:, 0]
-            mask_all[not_01_ignore_index_fg.long(), :] = 1
+                th_mask_value = torch.sort(spatial_mean, dim=1, descending=True)[0][:, int(HW/2.0)]
+                th_mask_value = th_mask_value.view(num_rois, 1).expand(num_rois, HW)
+                mask_all_cuda = torch.where(spatial_mean > th_mask_value, torch.zeros(spatial_mean.shape).cuda(),
+                                            torch.ones(spatial_mean.shape).cuda())
+                mask_all = mask_all_cuda.detach().cpu().numpy()
+                spatial_drop_num = int(HW/3.0)
+                for q in range(num_rois):
+                    mask_all_temp = np.ones((HW), dtype=np.float32)
+                    zero_index = np.where(mask_all[q, :] == 0)[0]
+                    num_zero_index = zero_index.size
+                    if num_zero_index >= spatial_drop_num:
+                        dumy_index = npr.choice(zero_index, size=spatial_drop_num, replace=False)
+                    else:
+                        zero_index = np.arange(49)
+                        dumy_index = npr.choice(zero_index, size=spatial_drop_num, replace=False)
+                    mask_all_temp[dumy_index] = 0
+                    mask_all[q, :] = mask_all_temp
+                mask_all = torch.from_numpy(mask_all.reshape(num_rois, H, H)).cuda()
+                mask_all = mask_all.view(num_rois, 1, H, H)
 
-            self.train()
-            mask_all = Variable(mask_all, requires_grad=True)
-            x = x * mask_all
+                cls_prob_before = F.softmax(output, dim=1)
+                x_new_view_after = x_new * mask_all
+                x_new_view_after = self.avgpool(x_new_view_after)
+                x_new_view_after = x_new_view_after.view(x_new_view_after.size(0), -1)
+                x_new_view_after = self.fc(x_new_view_after)
+                cls_prob_after = F.softmax(x_new_view_after, dim=1)
 
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        avg = x
+                sp_i = torch.ones([2, num_rois]).long()
+                sp_i[0, :] = torch.arange(num_rois)
+                sp_i[1, :] = index
+                sp_v = torch.ones([num_rois])
+                one_hot_sparse = torch.sparse.FloatTensor(sp_i, sp_v, torch.Size([num_rois, class_num])).to_dense().cuda()
+                before_vector = torch.sum(one_hot_sparse * cls_prob_before, dim=1)
+                after_vector = torch.sum(one_hot_sparse * cls_prob_after, dim=1)
+                change_vector = before_vector - after_vector - 0.0001
+                change_vector = torch.where(change_vector > 0, change_vector, torch.zeros(change_vector.shape).cuda())
+                th_fg_value = torch.sort(change_vector, dim=0, descending=True)[0][int(round(float(num_rois) * percent))]
+                drop_index_fg = change_vector.gt(th_fg_value)
+                ignore_index_fg = 1 - drop_index_fg.float()
+                not_01_ignore_index_fg = ignore_index_fg.nonzero()[:, 0]
+                mask_all[not_01_ignore_index_fg.long(), :] = 1
 
-        out = self.fc(x)
+                self.train()
+                mask_all = Variable(mask_all, requires_grad=True)
+                x = x * mask_all
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3, f4]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
-        features['avgpool_feature'] = avg
+            x = self.avgpool(x)
+            x = torch.flatten(x, 1)
+            avg = x
 
-        return out, features
+            out = self.fc(x)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3, f4]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 def _resnet(arch, block, layers, pretrained, progress, **kwargs):

@@ -202,33 +202,43 @@ class ResNet(nn.Module):
 
         return [bn1, bn2, bn3]
 
-    def forward(self, x, is_feat=False):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)  # 32x32
-        f0 = x
+    def forward(self, x, is_feat=False, is_srrl=None):
 
-        x, f1_pre = self.layer1(x)  # 32x32
-        f1 = x
+        if not is_srrl is None:
+            x = self.avgpool(is_srrl)
+            x = x.view(x.size(0), -1)
 
-        x, f2_pre = self.layer2(x)  # 16x16
-        f2 = x
+            out = self.fc(x)
 
-        x, f3_pre = self.layer3(x)  # 8x8
-        f3 = x
+            return out
 
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        avg = x
+        else:
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)  # 32x32
+            f0 = x
 
-        out = self.fc(x)
+            x, f1_pre = self.layer1(x)  # 32x32
+            f1 = x
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
-        features['avgpool_feature'] = avg
+            x, f2_pre = self.layer2(x)  # 16x16
+            f2 = x
 
-        return out, features
+            x, f3_pre = self.layer3(x)  # 8x8
+            f3 = x
+
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            avg = x
+
+            out = self.fc(x)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
+            features['avgpool_feature'] = avg
+
+            return out, features
 
 
 def resnet8(**kwargs):

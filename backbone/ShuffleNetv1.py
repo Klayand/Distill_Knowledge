@@ -110,26 +110,36 @@ class ShuffleNet(nn.Module):
     def get_bn_before_relu(self):
         raise NotImplementedError('ShuffleNet currently is not supported for "Overhaul" teacher')
 
-    def forward(self, x, is_feat=False):
-        out = F.relu(self.bn1(self.conv1(x)))
-        f0 = out
-        out, f1_pre = self.layer1(out)
-        f1 = out
-        out, f2_pre = self.layer2(out)
-        f2 = out
-        out, f3_pre = self.layer3(out)
-        f3 = out
-        out = F.avg_pool2d(out, 4)
-        out = out.reshape(out.size(0), -1)
-        avg = out
+    def forward(self, x, is_feat=False, is_srrl=None):
 
-        out = self.linear(out)
+        if not is_srrl is None:
+            out = F.avg_pool2d(is_srrl, 4)
+            out = out.reshape(out.size(0), -1)
 
-        features = {}
-        features['features'] = [f0, f1, f2, f3]
-        features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
-        features['avgpool_feature'] = [avg]
-        return out, features
+            out = self.linear(out)
+
+            return out
+
+        else:
+            out = F.relu(self.bn1(self.conv1(x)))
+            f0 = out
+            out, f1_pre = self.layer1(out)
+            f1 = out
+            out, f2_pre = self.layer2(out)
+            f2 = out
+            out, f3_pre = self.layer3(out)
+            f3 = out
+            out = F.avg_pool2d(out, 4)
+            out = out.reshape(out.size(0), -1)
+            avg = out
+
+            out = self.linear(out)
+
+            features = {}
+            features['features'] = [f0, f1, f2, f3]
+            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
+            features['avgpool_feature'] = [avg]
+            return out, features
 
 
 def ShuffleV1(**kwargs):
