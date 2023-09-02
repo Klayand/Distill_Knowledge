@@ -145,11 +145,11 @@ class Solver():
             print(f'epoch {epoch}, validation_loss = {validation_loss}, validation_acc = {validation_acc}')
             print('*' * 100)
 
-            if is_student:
-                torch.save(self.teacher.state_dict(), 'student_baseline.pth')
-            else:
-                torch.save(self.teacher.state_dict(), 'teacher.pth')
-                self.teacher_path = 'teacher.pth'
+            # if is_student:
+            #     torch.save(self.teacher.state_dict(), 'student_baseline.pth')
+            # else:
+            #     torch.save(self.teacher.state_dict(), 'teacher.pth')
+            #     self.teacher_path = 'teacher.pth'
 
         return self.teacher
 
@@ -236,40 +236,40 @@ class Solver():
             print(f'epoch {epoch}, validation_loss = {validation_loss}, validation_acc = {validation_acc}')
             print('*' * 100)
 
-            torch.save(self.student.state_dict(), 'student.pth')
+            # torch.save(self.student.state_dict(), 'student.pth')
 
         return self.student
 
 
 if __name__ == '__main__':
     import torchvision
-    from backbone import resnet32, resnet14
-    from distiller import CenterKernelAnalysisRKD, DistanceWiseRKD
+    from backbone import wrn_16_1,wrn_40_1, vgg11_bn
+    from distiller import DKD, AngleWiseRKD
     from data import get_CIFAR100_train, get_CIFAR100_test
 
-    student_model = resnet14(num_classes=100)
-    teacher_model = resnet32(num_classes=100)
+    student_model = wrn_16_1(num_classes=100)
+    teacher_model = wrn_40_1(num_classes=100)
 
-    distiller = CenterKernelAnalysisRKD(teacher=teacher_model, student=student_model).to('cuda')
+    distiller = AngleWiseRKD(teacher=teacher_model, student=student_model).to('cuda')
 
-    train_loader = get_CIFAR100_train(batch_size=128, num_workers=8, augment=True)
-    test_loader = get_CIFAR100_test(batch_size=128, num_workers=8)
+    train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
+    test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
 
     w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
-    w.train(train_loader, test_loader, total_epoch=2)
+    # w.train(train_loader, test_loader, total_epoch=1)
     print()
     print("Teacher model training completed!")
     print()
 
     # for student baseline
-    student_baseline = resnet14(num_classes=100)
+    student_baseline = vgg11_bn(num_classes=100)
     s = Solver(teacher=student_baseline, student=teacher_model, distiller=distiller)
-    s.train(train_loader, test_loader, total_epoch=2, is_student=True)
+    # s.train(train_loader, test_loader, total_epoch=1, is_student=True)
     print()
     print("Student model without distillation training completed!")
     print()
 
-    w.distill(train_loader, test_loader, total_epoch=2)
+    w.distill(train_loader, test_loader, total_epoch=1)
 
     print()
     print("Student model with distillation training completed!")
