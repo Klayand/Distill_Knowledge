@@ -8,6 +8,7 @@ from .CWD import ChannelWiseDivergence
 from .FitNet import FitNet
 from .ReviewKD import ReviewKD
 from .DKD import DKD
+from .AB import FullyConnectedAB, ConvolutionAB
 
 __all__ = ['Distiller',
            'KD',
@@ -20,4 +21,6 @@ __all__ = ['Distiller',
            'ChannelWiseDivergence',
            'FitNet',
            'ReviewKD',
-           'DKD']
+           'DKD',
+           'ConvolutionAB',
+           'FullyConnectedAB']

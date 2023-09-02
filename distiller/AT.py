@@ -115,12 +115,12 @@ class AT(Distiller):
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
         loss_at = self.feature_weight * at_loss(
-            input_data = image,
-            target = target,
-            teacher_feature=teacher_feature['features'][1:],
-            student_feature=student_feature['features'][1:],
-            teacher_net = self.teacher,
-            student_net = self.student,
+            input_data=image,
+            target=target,
+            teacher_feature=teacher_feature['features'][-1] if self.single_stage else teacher_feature['features'][1:],
+            student_feature=student_feature['features'][-1] if self.single_stage else student_feature['features'][1:],
+            teacher_net=self.teacher,
+            student_net=self.student,
             single_stage=self.single_stage,
             at_method=self.at_method,
             p=self.p

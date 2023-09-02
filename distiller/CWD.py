@@ -67,8 +67,8 @@ class ChannelWiseDivergence(Distiller):
         # loss_kd = self.cwd_weight * kd_loss(logits_student, logits_teacher, self.temperature)
 
         loss_cwd = self.cwd_weight * cwd_loss(
-                teacher_features=teacher_feature["features"],
-                student_features=student_feature['features'],
+                teacher_features=teacher_feature['features'][-1] if self.single_stage else teacher_feature['features'][1:],
+                student_features=student_feature['features'][-1] if self.single_stage else student_feature['features'][1:],
                 temperature=self.temperature,
         )
 

@@ -113,8 +113,8 @@ class NST(Distiller):
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
         loss_nst = self.feature_weight * nst_loss(
-            teacher_feature=teacher_feature['features'][1:],
-            student_feature=student_feature['features'][1:],
+            teacher_feature=teacher_feature['features'][-1] if self.single_stage else teacher_feature['features'][1:],
+            student_feature=student_feature['features'][-1] if self.single_stage else student_feature['features'][1:],
             single_stage=self.single_stage,
             kernel_function=self.kernel_function
         )
