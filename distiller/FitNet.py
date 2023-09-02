@@ -1,3 +1,8 @@
+"""
+    The performance of this version is very low, I have no idea.
+    If you have discovered something, please leave your comments
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
