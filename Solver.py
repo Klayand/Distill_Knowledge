@@ -244,13 +244,13 @@ class Solver():
 if __name__ == '__main__':
     import torchvision
     from backbone import wrn_16_1,wrn_40_1, vgg11_bn
-    from distiller import DKD, AngleWiseRKD
+    from distiller import DKD, AngleWiseRKD, SRRL
     from data import get_CIFAR100_train, get_CIFAR100_test
 
     student_model = wrn_16_1(num_classes=100)
     teacher_model = wrn_40_1(num_classes=100)
 
-    distiller = AngleWiseRKD(teacher=teacher_model, student=student_model).to('cuda')
+    distiller = SRRL(teacher=teacher_model, student=student_model).to('cuda')
 
     train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, augment=True)
     test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)

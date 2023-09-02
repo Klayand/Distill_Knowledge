@@ -41,8 +41,6 @@ class DIST(Distiller):
         self.beta = beta
         self.gamma = gamma
         self.temperature = temperature
-        self.teacher = teacher
-        self.student = student
 
     def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
