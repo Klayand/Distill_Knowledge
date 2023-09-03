@@ -30,9 +30,18 @@ def sp_loss(teacher_feature, student_feature, single_stage=False):
 
 
 class SP(Distiller):
-    """ Similarity-Preserving Knowledge Distillation, ICCV2019"""
-    def __init__(self, teacher, student, combined_KD=False, single_stage=False,
-                 ce_weight=1.0, feature_weight=3000.0, temperature=None):
+    """Similarity-Preserving Knowledge Distillation, ICCV2019"""
+
+    def __init__(
+        self,
+        teacher,
+        student,
+        combined_KD=False,
+        single_stage=False,
+        ce_weight=1.0,
+        feature_weight=3000.0,
+        temperature=None,
+    ):
         super(SP, self).__init__(teacher=teacher, student=student)
 
         self.ce_weight = ce_weight
@@ -42,7 +51,6 @@ class SP(Distiller):
         self.single_stage = single_stage
 
     def forward_train(self, image, target, **kwargs):
-
         logits_student, student_features = self.student(image)
 
         with torch.no_grad():
@@ -57,22 +65,20 @@ class SP(Distiller):
         # Compute loss
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
         loss_sp = self.feature_weight * sp_loss(
-            teacher_feature=teacher_features['features'][-1] if self.single_stage else teacher_features['features'][1:],
-            student_feature=student_features['features'][-1] if self.single_stage else student_features['features'][1:],
-            single_stage=self.single_stage
+            teacher_feature=teacher_features["features"][-1] if self.single_stage else teacher_features["features"][1:],
+            student_feature=student_features["features"][-1] if self.single_stage else student_features["features"][1:],
+            single_stage=self.single_stage,
         )
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_sp': loss_sp
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_sp": loss_sp}
 
         total_loss = loss_ce + loss_sp
 
         if self.combined_kd:
             from KD import kd_loss
+
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
 
             total_loss += loss_kd
 

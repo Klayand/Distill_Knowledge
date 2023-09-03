@@ -18,9 +18,7 @@ def cosine_similarity(a, b, eps=1e-8):
 
 
 def pearson_correlation(a, b, eps=1e-8):
-    return cosine_similarity(
-        a - a.mean(1).unsqueeze(1), b - b.mean(1).unsqueeze(1), eps
-    )
+    return cosine_similarity(a - a.mean(1).unsqueeze(1), b - b.mean(1).unsqueeze(1), eps)
 
 
 def inter_class_relation(teacher_logits, student_logits):
@@ -32,9 +30,9 @@ def intra_class_relation(teacher_logits, student_logits):
 
 
 class DIST(Distiller):
-    """ Knowledge Distillation from A Stronger Teacher """
-    def __init__(self, teacher, student, ce_weight=1.0,
-                 beta=1.0, gamma=1.0, temperature=4.0):
+    """Knowledge Distillation from A Stronger Teacher"""
+
+    def __init__(self, teacher, student, ce_weight=1.0, beta=1.0, gamma=1.0, temperature=4.0):
         super(DIST, self).__init__(teacher=teacher, student=student)
 
         self.ce_weight = ce_weight
@@ -59,12 +57,7 @@ class DIST(Distiller):
 
         loss_dist = loss_intra + loss_inter
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_inter': loss_inter,
-            'loss_intra': loss_intra,
-            'loss_dist': loss_dist
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_inter": loss_inter, "loss_intra": loss_intra, "loss_dist": loss_dist}
 
         total_loss = loss_dist + loss_ce
 

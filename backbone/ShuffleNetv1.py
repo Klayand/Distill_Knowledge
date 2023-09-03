@@ -111,7 +111,6 @@ class ShuffleNet(nn.Module):
         raise NotImplementedError('ShuffleNet currently is not supported for "Overhaul" teacher')
 
     def forward(self, x, is_feat=False, is_srrl=None):
-
         if not is_srrl is None:
             out = F.avg_pool2d(is_srrl, 4)
             out = out.reshape(out.size(0), -1)
@@ -136,13 +135,12 @@ class ShuffleNet(nn.Module):
             out = self.linear(out)
 
             features = {}
-            features['features'] = [f0, f1, f2, f3]
-            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
-            features['avgpool_feature'] = [avg]
+            features["features"] = [f0, f1, f2, f3]
+            features["preact_features"] = [f0, f1_pre, f2_pre, f3_pre]
+            features["avgpool_feature"] = [avg]
             return out, features
 
 
 def ShuffleV1(**kwargs):
     cfg = {"out_planes": [240, 480, 960], "num_blocks": [4, 8, 4], "groups": 3}
     return ShuffleNet(cfg, **kwargs)
-

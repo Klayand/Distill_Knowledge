@@ -9,23 +9,21 @@ class FGSM(Optimizer):
         nesterov = False
         maximize = False
         momentum = 0
-        defaults = dict(lr=lr, momentum=momentum, dampening=dampening,
-                        weight_decay=weight_decay, nesterov=nesterov, maximize=maximize)
+        defaults = dict(
+            lr=lr,
+            momentum=momentum,
+            dampening=dampening,
+            weight_decay=weight_decay,
+            nesterov=nesterov,
+            maximize=maximize,
+        )
         super(FGSM, self).__init__(params, defaults)
         self.lr = lr
 
     @torch.no_grad()
     def step(self, closure=None):
         for group in self.param_groups:
-            for p in group['params']:
-                if p in group['params']:
+            for p in group["params"]:
+                if p in group["params"]:
                     if p.grad is not None:
                         p.add_(-self.lr * p.grad.sign())
-
-
-
-
-
-
-
-

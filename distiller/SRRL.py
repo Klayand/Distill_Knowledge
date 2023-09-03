@@ -15,13 +15,13 @@ from .utils import get_feature_shapes
 from .KD import kd_loss
 
 
-def sr_loss(teacher_logits, student_logits, method:str='mse', temperature=4):
-    if method == 'mse':
+def sr_loss(teacher_logits, student_logits, method: str = "mse", temperature=4):
+    if method == "mse":
         loss = F.mse_loss(student_logits, teacher_logits)
-    elif method == 'ce':
+    elif method == "ce":
         # here should use teacher_logits or groudtruth?
         loss = F.cross_entropy(student_logits, teacher_logits)
-    elif method == 'kl':
+    elif method == "kl":
         # here should directly use kd_loss or just like the equation below?
         # loss = F.kl_div(
         #     student_logits / temperature, teacher_logits / temperature
@@ -47,18 +47,16 @@ class TransferConv(nn.Module):
         self.out_feature = out_dim
 
         self.Connectors = nn.Sequential(
-            nn.Conv2d(self.in_feature, self.out_feature,
-                      kernel_size=1, stride=1,
-                      padding=0, bias=False),
+            nn.Conv2d(self.in_feature, self.out_feature, kernel_size=1, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(self.out_feature),
-            nn.ReLU()
+            nn.ReLU(),
         )
 
         # initialization
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
                 n = module.kernel_size[0] * module.kernel_size[1] * module.out_channels
-                module.weight.data.normal_(0, math.sqrt(2. / n))
+                module.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(module, nn.BatchNorm2d):
                 module.weight.data.fill_(1)
                 module.bias.data.zero_()
@@ -78,13 +76,13 @@ class TransferConv(nn.Module):
 
 
 class SRRL(Distiller):
-    def __init__(self, teacher, student, ce_weight=1.0,
-                 alpha=1.0, beta=1.0):
+    def __init__(self, teacher, student, ce_weight=1.0, alpha=1.0, beta=1.0, method: str = "mse"):
         super(SRRL, self).__init__(teacher=teacher, student=student)
 
         self.ce_weight = ce_weight
         self.alpha = alpha
         self.beta = beta
+        self.method = method
 
         # for other dataset, it needs to be rewritten
         self.teacher_shapes, self.student_shapes = get_feature_shapes(teacher, student, input_size=(32, 32))
@@ -98,8 +96,8 @@ class SRRL(Distiller):
         with torch.no_grad():
             logits_teacher, teacher_feature = self.teacher(image)
 
-        teacher_featuremap = teacher_feature['features'][-1]
-        student_featuremap = student_feature['features'][-1]
+        teacher_featuremap = teacher_feature["features"][-1]
+        student_featuremap = student_feature["features"][-1]
 
         # Compute loss
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
@@ -110,13 +108,9 @@ class SRRL(Distiller):
         student_pred_teacher_net = self.teacher(x=None, is_srrl=regression_student_featuremap)
 
         # get logits, instead of probabilities
-        loss_sr = self.beta * sr_loss(logits_teacher, student_pred_teacher_net)
+        loss_sr = self.beta * sr_loss(logits_teacher, student_pred_teacher_net, method=self.method)
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_fm': loss_fm,
-            'loss_sr': loss_sr
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_fm": loss_fm, "loss_sr": loss_sr}
 
         total_loss = loss_ce + loss_fm + loss_sr
 

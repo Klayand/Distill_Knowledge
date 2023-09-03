@@ -40,7 +40,7 @@ class BasicBlock(nn.Module):
         base_width=64,
         dilation=1,
         norm_layer=None,
-        is_last=False
+        is_last=False,
     ):
         super(BasicBlock, self).__init__()
         if norm_layer is None:
@@ -101,7 +101,7 @@ class Bottleneck(nn.Module):
         base_width=64,
         dilation=1,
         norm_layer=None,
-        is_last=False
+        is_last=False,
     ):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
@@ -181,15 +181,9 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(
-            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0]
-        )
-        self.layer3 = self._make_layer(
-            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1]
-        )
-        self.layer4 = self._make_layer(
-            block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2]
-        )
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.last_channel = 512 * block.expansion
@@ -235,7 +229,7 @@ class ResNet(nn.Module):
                 self.base_width,
                 previous_dilation,
                 norm_layer,
-                is_last=(blocks == 1)
+                is_last=(blocks == 1),
             )
         )
         self.inplanes = planes * block.expansion
@@ -248,7 +242,7 @@ class ResNet(nn.Module):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
-                    is_last=(i == blocks - 1)
+                    is_last=(i == blocks - 1),
                 )
             )
 
@@ -292,9 +286,9 @@ class ResNet(nn.Module):
             out = self.fc(x)
 
             features = {}
-            features['features'] = [f0, f1, f2, f3, f4]
-            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
-            features['avgpool_feature'] = avg
+            features["features"] = [f0, f1, f2, f3, f4]
+            features["preact_features"] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+            features["avgpool_feature"] = avg
 
             return out, features
 
@@ -309,4 +303,3 @@ def resnet34_imagenet(**kwargs):
 
 def resnet50_imagenet(**kwargs):
     return ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
-

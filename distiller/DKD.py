@@ -32,8 +32,7 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def dkd_loss(student_logits, teacher_logits, target,
-             alpha, beta, temperature):
+def dkd_loss(student_logits, teacher_logits, target, alpha, beta, temperature):
     # follow the dim=1 to compute the logits
     pred_student = F.softmax(student_logits / temperature, dim=1)
     pred_teacher = F.softmax(teacher_logits / temperature, dim=1)
@@ -45,31 +44,22 @@ def dkd_loss(student_logits, teacher_logits, target,
     pred_teacher = cat_mask(pred_teacher, gt_mask, other_mask)
     log_pred_student = torch.log(pred_student)
 
-    tckd_loss = (
-        F.kl_div(log_pred_student, pred_teacher, size_average=False)
-        * (temperature**2) / target.shape[0]
-    )
+    tckd_loss = F.kl_div(log_pred_student, pred_teacher, size_average=False) * (temperature**2) / target.shape[0]
 
-    pred_teacher_part2 = F.softmax(
-        teacher_logits / temperature - 1000.0 * gt_mask, dim=1
-    )
-    log_pred_student_part2 = F.log_softmax(
-        student_logits / temperature - 1000.0 * gt_mask, dim=1
-    )
+    pred_teacher_part2 = F.softmax(teacher_logits / temperature - 1000.0 * gt_mask, dim=1)
+    log_pred_student_part2 = F.log_softmax(student_logits / temperature - 1000.0 * gt_mask, dim=1)
 
     nckd_loss = (
-        F.kl_div(log_pred_student_part2, pred_teacher_part2, size_average=False)
-        * (temperature ** 2) / target.shape[0]
+        F.kl_div(log_pred_student_part2, pred_teacher_part2, size_average=False) * (temperature**2) / target.shape[0]
     )
 
     return alpha * tckd_loss + beta * nckd_loss
 
 
 class DKD(Distiller):
-    """ Decoupled Knowledge Distillation """
+    """Decoupled Knowledge Distillation"""
 
-    def __init__(self, teacher, student, ce_weight=1.0,
-                 alpha=1.0, beta=8.0, temperature=4):
+    def __init__(self, teacher, student, ce_weight=1.0, alpha=1.0, beta=8.0, temperature=4):
         super(DKD, self).__init__(teacher=teacher, student=student)
         self.ce_weight = ce_weight
         self.alpha = alpha
@@ -91,13 +81,10 @@ class DKD(Distiller):
             target=target,
             alpha=self.alpha,
             beta=self.beta,
-            temperature=self.temperature
+            temperature=self.temperature,
         )
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_dkd': loss_dkd
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_dkd": loss_dkd}
 
         total_loss = loss_ce + loss_dkd
 

@@ -90,16 +90,10 @@ class BasicBlock(nn.Module):
         self.num_model = num_model
         self.bn1 = nn.BatchNorm2d(inplanes)
         self.conv1 = (
-            conv3x3(inplanes, planes, stride)
-            if self.num_model <= 0
-            else conv3x3(inplanes, planes, stride, num_model)
+            conv3x3(inplanes, planes, stride) if self.num_model <= 0 else conv3x3(inplanes, planes, stride, num_model)
         )
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv2 = (
-            conv3x3(planes, planes)
-            if self.num_model <= 0
-            else conv3x3(inplanes, planes, 1, num_model)
-        )
+        self.conv2 = conv3x3(planes, planes) if self.num_model <= 0 else conv3x3(inplanes, planes, 1, num_model)
         self.bn3 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=_inplace_flag)
         self.downsample = downsample
@@ -107,7 +101,6 @@ class BasicBlock(nn.Module):
         self.shake_drop = ShakeDrop(p_shakedrop)
 
     def forward(self, x):
-
         out = self.bn1(x)
         out = self.conv1(out)
         out = self.bn2(out)
@@ -189,7 +182,6 @@ class Bottleneck(nn.Module):
         self.shake_drop = ShakeDrop(p_shakedrop)
 
     def forward(self, x):
-
         out = self.bn1(x)
         out = self.conv1(out)
 
@@ -234,13 +226,13 @@ class Bottleneck(nn.Module):
 
 class PyramidNet(nn.Module):
     def __init__(
-            self,
-            bottleneck=True,
-            depth=272,
-            alpha=200,
-            num_classes=60,
-            split_factor=1,
-            num_models=-1,
+        self,
+        bottleneck=True,
+        depth=272,
+        alpha=200,
+        num_classes=60,
+        split_factor=1,
+        num_models=-1,
     ):
         super(PyramidNet, self).__init__()
 
@@ -264,16 +256,14 @@ class PyramidNet(nn.Module):
             block = BasicBlock
 
         # self.addrate = alpha / (3 * n * 1.0)
-        self.addrate = alpha / (3 * n * (split_factor ** 0.5))
-        self.final_shake_p = 0.5 / (split_factor ** 0.5)
+        self.addrate = alpha / (3 * n * (split_factor**0.5))
+        self.final_shake_p = 0.5 / (split_factor**0.5)
         print(
             "INFO:PyTorch: PyramidNet: The add rate is {}, "
             "the final shake p is {}".format(self.addrate, self.final_shake_p)
         )
 
-        self.ps_shakedrop = [
-            1.0 - (1.0 - (self.final_shake_p / (3 * n)) * (i + 1)) for i in range(3 * n)
-        ]
+        self.ps_shakedrop = [1.0 - (1.0 - (self.final_shake_p / (3 * n)) * (i + 1)) for i in range(3 * n)]
 
         self.input_featuremap_dim = self.inplanes
         self.conv1 = (
@@ -306,16 +296,12 @@ class PyramidNet(nn.Module):
         self.fc = (
             nn.Linear(self.final_featuremap_dim, num_classes)
             if self.num_models <= 0
-            else Ensemble_orderFC(
-                self.final_featuremap_dim, num_classes, num_models=self.num_models
-            )
+            else Ensemble_orderFC(self.final_featuremap_dim, num_classes, num_models=self.num_models)
         )
 
     def pyramidal_make_layer(self, block, block_depth, stride=1, ensemble=False):
         downsample = None
-        if (
-                stride != 1
-        ):  # or self.inplanes != int(round(featuremap_dim_1st)) * block.outchannel_ratio:
+        if stride != 1:  # or self.inplanes != int(round(featuremap_dim_1st)) * block.outchannel_ratio:
             downsample = nn.AvgPool2d((2, 2), stride=(2, 2), ceil_mode=True)
 
         layers = []
@@ -347,7 +333,6 @@ class PyramidNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x, is_srrl=None):
-
         if not is_srrl is None:
             x = self.avgpool(is_srrl)
             x = x.view(x.size(0), -1)
@@ -383,9 +368,9 @@ class PyramidNet(nn.Module):
             out = self.fc(x)
 
             features = {}
-            features['features'] = [f0, f1, f2, f3]
-            features['preact_features'] = [f0, final_pre]
-            features['avgpool_feature'] = avg
+            features["features"] = [f0, f1, f2, f3]
+            features["preact_features"] = [f0, final_pre]
+            features["avgpool_feature"] = avg
 
             return out, features
 
@@ -398,4 +383,3 @@ def pyramidnet164(bottleneck=True, num_models=-1, **kwargs):
 def pyramidnet272(bottleneck=True, num_models=-1, **kwargs):
     """PyramidNet272 for CIFAR and SVHN"""
     return PyramidNet(bottleneck=bottleneck, depth=272, alpha=200, num_models=num_models, **kwargs)
-

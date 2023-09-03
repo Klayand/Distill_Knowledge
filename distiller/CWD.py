@@ -27,28 +27,28 @@ def single_stage_loss(teacher_feature, student_feature, temperature):
         teacher_feature_norm = conv_layer(teacher_feature_norm)
         CONV_LAYER.append(conv_layer)
 
-    loss = F.kl_div(student_feature_norm, teacher_feature_norm, reduction='none').sum(2).mean()
+    loss = F.kl_div(student_feature_norm, teacher_feature_norm, reduction="none").sum(2).mean()
 
     return loss
 
 
 class ChannelWiseDivergence(Distiller):
-    """ Channel-wise Knowledge Distillation for Dense Prediction
+    """Channel-wise Knowledge Distillation for Dense Prediction
 
-        For this work, it is noted that, the original paper says the activation maps involve
-        inner feature maps and final score logits.
-        So if just use the score logits, it behaves like KD.
-        But if you combine them together, you have two options:
-        1. using inner feature map and score logits separately.
-        2. fusing inner feature map and score logits together.
+    For this work, it is noted that, the original paper says the activation maps involve
+    inner feature maps and final score logits.
+    So if just use the score logits, it behaves like KD.
+    But if you combine them together, you have two options:
+    1. using inner feature map and score logits separately.
+    2. fusing inner feature map and score logits together.
 
-        Here I just choose the former. And I think the activation maps only involve the
-        inner feature maps, you can set combie_KD=True to introduce the final score logits.
+    Here I just choose the former. And I think the activation maps only involve the
+    inner feature maps, you can set combie_KD=True to introduce the final score logits.
     """
 
-    def __init__(self, teacher, student, combined_KD=False,
-                 ce_weight=1.0, cwd_weight=3.0,
-                 temperature=4, single_stage=False):
+    def __init__(
+        self, teacher, student, combined_KD=False, ce_weight=1.0, cwd_weight=3.0, temperature=4, single_stage=False
+    ):
         super(ChannelWiseDivergence, self).__init__(teacher=teacher, student=student)
         self.ce_weight = ce_weight
         self.cwd_weight = cwd_weight
@@ -67,29 +67,29 @@ class ChannelWiseDivergence(Distiller):
         # loss_kd = self.cwd_weight * kd_loss(logits_student, logits_teacher, self.temperature)
 
         loss_cwd = self.cwd_weight * cwd_loss(
-                teacher_features=teacher_feature['features'][-1] if self.single_stage else teacher_feature['features'][1:],
-                student_features=student_feature['features'][-1] if self.single_stage else student_feature['features'][1:],
-                temperature=self.temperature,
+            teacher_features=teacher_feature["features"][-1] if self.single_stage else teacher_feature["features"][1:],
+            student_features=student_feature["features"][-1] if self.single_stage else student_feature["features"][1:],
+            temperature=self.temperature,
         )
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_cwd': loss_cwd
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_cwd": loss_cwd}
 
         total_loss = loss_ce + loss_cwd
 
         if self.combined_KD:
             from .KD import kd_loss
+
             loss_kd = self.cwd_weight * kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss
 
     def get_learnable_parameters(self):
         if len(self.conv_layers) != 0:
-            return super(ChannelWiseDivergence, self).get_learnable_parameters() + [layer.parameters for layer in CONV_LAYER]
+            return super(ChannelWiseDivergence, self).get_learnable_parameters() + [
+                layer.parameters for layer in CONV_LAYER
+            ]
         else:
             return super(ChannelWiseDivergence, self).get_learnable_parameters()
 

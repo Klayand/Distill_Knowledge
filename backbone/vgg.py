@@ -28,7 +28,6 @@ cfg = {
 }
 
 
-
 class Normalizer4CRD(nn.Module):
     def __init__(self, linear, power=2):
         super().__init__()
@@ -44,8 +43,7 @@ class Normalizer4CRD(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, cfg, batch_norm=False, num_classes=1000,
-                 norm_layer=nn.BatchNorm2d):
+    def __init__(self, cfg, batch_norm=False, num_classes=1000, norm_layer=nn.BatchNorm2d):
         super(VGG, self).__init__()
         self.block0 = self._make_layers(cfg[0], batch_norm, 3, norm_layer)
         self.block1 = self._make_layers(cfg[1], batch_norm, cfg[0][-1], norm_layer)
@@ -85,7 +83,6 @@ class VGG(nn.Module):
         return [bn1, bn2, bn3, bn4]
 
     def forward(self, x, is_feat=False, preact=False, is_srrl=None):
-
         if not is_srrl is None:
             x = self.pool4(is_srrl)
             x = x.view(x.size(0), -1)
@@ -135,9 +132,9 @@ class VGG(nn.Module):
             x = self.classifier(x)
 
             features = {}
-            features['features'] = [f0, f1, f2, f3, f4]
-            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
-            features['avgpool_feature'] = avg
+            features["features"] = [f0, f1, f2, f3, f4]
+            features["preact_features"] = [f0, f1_pre, f2_pre, f3_pre, f4_pre]
+            features["avgpool_feature"] = avg
 
             return x, features
 

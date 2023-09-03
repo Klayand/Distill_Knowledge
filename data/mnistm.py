@@ -12,20 +12,33 @@ from torchvision.datasets.utils import download_and_extract_archive
 
 
 class MNISTM(VisionDataset):
-    """MNIST-M Dataset.
-    """
+    """MNIST-M Dataset."""
 
     resources = [
-        ('https://github.com/liyxi/mnist-m/releases/download/data/mnist_m_train.pt.tar.gz',
-         '191ed53db9933bd85cc9700558847391'),
-        ('https://github.com/liyxi/mnist-m/releases/download/data/mnist_m_test.pt.tar.gz',
-         'e11cb4d7fff76d7ec588b1134907db59')
+        (
+            "https://github.com/liyxi/mnist-m/releases/download/data/mnist_m_train.pt.tar.gz",
+            "191ed53db9933bd85cc9700558847391",
+        ),
+        (
+            "https://github.com/liyxi/mnist-m/releases/download/data/mnist_m_test.pt.tar.gz",
+            "e11cb4d7fff76d7ec588b1134907db59",
+        ),
     ]
 
     training_file = "mnist_m_train.pt"
     test_file = "mnist_m_test.pt"
-    classes = ['0 - zero', '1 - one', '2 - two', '3 - three', '4 - four',
-               '5 - five', '6 - six', '7 - seven', '8 - eight', '9 - nine']
+    classes = [
+        "0 - zero",
+        "1 - one",
+        "2 - two",
+        "3 - three",
+        "4 - four",
+        "5 - five",
+        "6 - six",
+        "7 - seven",
+        "8 - eight",
+        "9 - nine",
+    ]
 
     @property
     def train_labels(self):
@@ -57,8 +70,7 @@ class MNISTM(VisionDataset):
             self.download()
 
         if not self._check_exists():
-            raise RuntimeError("Dataset not found." +
-                               " You can use download=True to download it")
+            raise RuntimeError("Dataset not found." + " You can use download=True to download it")
 
         if self.train:
             data_file = self.training_file
@@ -96,19 +108,20 @@ class MNISTM(VisionDataset):
 
     @property
     def raw_folder(self):
-        return os.path.join(self.root, self.__class__.__name__, 'raw')
+        return os.path.join(self.root, self.__class__.__name__, "raw")
 
     @property
     def processed_folder(self):
-        return os.path.join(self.root, self.__class__.__name__, 'processed')
+        return os.path.join(self.root, self.__class__.__name__, "processed")
 
     @property
     def class_to_idx(self):
         return {_class: i for i, _class in enumerate(self.classes)}
 
     def _check_exists(self):
-        return (os.path.exists(os.path.join(self.processed_folder, self.training_file)) and
-                os.path.exists(os.path.join(self.processed_folder, self.test_file)))
+        return os.path.exists(os.path.join(self.processed_folder, self.training_file)) and os.path.exists(
+            os.path.join(self.processed_folder, self.test_file)
+        )
 
     def download(self):
         """Download the MNIST-M data."""
@@ -121,49 +134,52 @@ class MNISTM(VisionDataset):
 
         # download files
         for url, md5 in self.resources:
-            filename = url.rpartition('/')[2]
-            download_and_extract_archive(url, download_root=self.raw_folder,
-                                         extract_root=self.processed_folder,
-                                         filename=filename, md5=md5)
+            filename = url.rpartition("/")[2]
+            download_and_extract_archive(
+                url, download_root=self.raw_folder, extract_root=self.processed_folder, filename=filename, md5=md5
+            )
 
-        print('Done!')
+        print("Done!")
 
     def extra_repr(self):
         return "Split: {}".format("Train" if self.train is True else "Test")
 
 
-def get_mnist_m_train(batch_size=256,
-                      num_workers=40,
-                      pin_memory=True,
-                     ):
-    transform = transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
-    set = MNISTM('../resources/mnistm', train=True, download=False, transform=transform)
+def get_mnist_m_train(
+    batch_size=256,
+    num_workers=40,
+    pin_memory=True,
+):
+    transform = transforms.Compose(
+        [
+            transforms.Resize((32, 32)),
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),
+        ]
+    )
+    set = MNISTM("../resources/mnistm", train=True, download=False, transform=transform)
 
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
-                        shuffle=True)
-
-    return loader
-
-
-def get_mnist_m_test(batch_size=256,
-                      num_workers=40,
-                      pin_memory=True,
-                      ):
-    transform = transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
-    set = MNISTM('../resources/mnistm/', train=False, download=False, transform=transform)
-
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
-                        shuffle=True)
+    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
 
     return loader
 
+
+def get_mnist_m_test(
+    batch_size=256,
+    num_workers=40,
+    pin_memory=True,
+):
+    transform = transforms.Compose(
+        [
+            transforms.Resize((32, 32)),
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),
+        ]
+    )
+    set = MNISTM("../resources/mnistm/", train=False, download=False, transform=transform)
+
+    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
+
+    return loader

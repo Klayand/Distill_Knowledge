@@ -12,7 +12,7 @@ from .__base_distiller import Distiller
 
 
 def CenterKernelAlignment(X, Y, with_l2_norm):
-    """ Compute the CKA similarity betweem samples"""
+    """Compute the CKA similarity betweem samples"""
     # Compute Gram matrix
     gram_X = torch.matmul(X, X.t())
     gram_Y = torch.matmul(Y, Y.t())
@@ -24,20 +24,20 @@ def CenterKernelAlignment(X, Y, with_l2_norm):
 
     # compute cka
     cka = torch.trace(torch.matmul(gram_X, gram_Y.t())) / torch.sqrt(
-        torch.trace(torch.matmul(gram_X, gram_X.t())) * torch.trace(
-        torch.matmul(gram_Y, gram_Y.t())))
+        torch.trace(torch.matmul(gram_X, gram_X.t())) * torch.trace(torch.matmul(gram_Y, gram_Y.t()))
+    )
 
     return cka
 
 
 def cka_loss(teacher_logits, student_logits, with_l2_norm):
-    """ Compute the CKA similarity between samples
-        CKA computes similarity between batches
-        input: (N, P) ----> output: (N, N) similarity matrix
+    """Compute the CKA similarity between samples
+    CKA computes similarity between batches
+    input: (N, P) ----> output: (N, N) similarity matrix
     """
     N_t = teacher_logits.shape[0]
     N_s = student_logits.shape[0]
-    assert N_s == N_t   # when use cka, you need to make sure N the same
+    assert N_s == N_t  # when use cka, you need to make sure N the same
 
     # get a similarity score between teacher and student
     similarity_martix = CenterKernelAlignment(teacher_logits, student_logits, with_l2_norm)
@@ -48,22 +48,21 @@ def cka_loss(teacher_logits, student_logits, with_l2_norm):
 
 def compute_angle(pred):
     """
-        Calculate the angle-wise relational potential which measures the angle formed
-        by the three examples in the output representation space.
+    Calculate the angle-wise relational potential which measures the angle formed
+    by the three examples in the output representation space.
     """
 
-    pred_vec = pred.unsqueeze(0) - pred.unsqueeze(1) # (N, N, C)
+    pred_vec = pred.unsqueeze(0) - pred.unsqueeze(1)  # (N, N, C)
     norm_pred_vec = F.normalize(pred_vec, p=2, dim=2)
 
     # torch.bmm: mat1: (N, M, P) mat2: (N, P, S) ---> (N, M, S)
-    angle = torch.bmm(norm_pred_vec,
-                      norm_pred_vec.transpose(1, 2)).view(-1) # (N*N*N, )
+    angle = torch.bmm(norm_pred_vec, norm_pred_vec.transpose(1, 2)).view(-1)  # (N*N*N, )
 
     return angle
 
 
 def angle_wise_loss(teacher_logits, student_logits, with_l2_norm=True):
-    """ Calculate the angle-wise distillation loss"""
+    """Calculate the angle-wise distillation loss"""
 
     student_logits = student_logits.view(student_logits.shape[0], -1)
     teacher_logits = teacher_logits.view(teacher_logits.shape[0], -1)
@@ -87,10 +86,9 @@ def euclidean_distance(pred, squared=False, eps=1e-12):
         square(bool): Whether to calculate the squred Euclidean distances. Defaults to False.
         eps(float): The minimum Euclidean distance between the two examples. Defaults to 1e-12.
     """
-    pred_squre = pred.pow(2).sum(dim=-1) # (N,)
-    prod = torch.mm(pred, pred.t()) # (N, N)
-    distance = (pred_squre.unsqueeze(1) + pred_squre.unsqueeze(0)
-                - 2 * prod).clamp(min=eps)  # (N, N)
+    pred_squre = pred.pow(2).sum(dim=-1)  # (N,)
+    prod = torch.mm(pred, pred.t())  # (N, N)
+    distance = (pred_squre.unsqueeze(1) + pred_squre.unsqueeze(0) - 2 * prod).clamp(min=eps)  # (N, N)
 
     if not squared:
         distance = distance.sqrt()
@@ -102,7 +100,7 @@ def euclidean_distance(pred, squared=False, eps=1e-12):
 
 
 def distance_wise_loss(teacher_logits, student_logits, squared=False, with_l2_norm=True):
-    """ Calculate distance-wise distillation loss. """
+    """Calculate distance-wise distillation loss."""
 
     student_logits = student_logits.view(student_logits.shape[0], -1)
     teacher_logits = teacher_logits.view(teacher_logits.shape[0], -1)
@@ -125,10 +123,19 @@ def distance_wise_loss(teacher_logits, student_logits, squared=False, with_l2_no
 
 
 class DistanceWiseRKD(Distiller):
-    """ Relational Knowledge Distillation for Distance-Wise function """
+    """Relational Knowledge Distillation for Distance-Wise function"""
 
-    def __init__(self, teacher, student, ce_weight=1.0, rkd_weight=25, combined_KD=False,
-            temperature=None, with_l2_norm=True, squared=False):
+    def __init__(
+        self,
+        teacher,
+        student,
+        ce_weight=1.0,
+        rkd_weight=25,
+        combined_KD=False,
+        temperature=None,
+        with_l2_norm=True,
+        squared=False,
+    ):
         super(DistanceWiseRKD, self).__init__(student=student, teacher=teacher)
         self.ce_weight = ce_weight
         self.rkd_weight = rkd_weight
@@ -150,12 +157,12 @@ class DistanceWiseRKD(Distiller):
             teacher_logits=logits_teacher,
             student_logits=logits_student,
             squared=self.squared,
-            with_l2_norm=self.with_l2_norm
+            with_l2_norm=self.with_l2_norm,
         )
 
         loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_distance_wise': loss_distance_wise,
+            "loss_ce": loss_ce,
+            "loss_distance_wise": loss_distance_wise,
         }
 
         total_loss = loss_ce + loss_distance_wise
@@ -164,17 +171,18 @@ class DistanceWiseRKD(Distiller):
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss
 
 
 class AngleWiseRKD(Distiller):
-    """ Relational Knowledge Distillation for Angle-Wise function """
+    """Relational Knowledge Distillation for Angle-Wise function"""
 
-    def __init__(self, teacher, student, ce_weight=1.0, rkd_weight=50, combined_KD=False,
-                 temperature=None, with_l2_norm=True):
+    def __init__(
+        self, teacher, student, ce_weight=1.0, rkd_weight=50, combined_KD=False, temperature=None, with_l2_norm=True
+    ):
         super(AngleWiseRKD, self).__init__(student=student, teacher=teacher)
         self.ce_weight = ce_weight
         self.rkd_weight = rkd_weight
@@ -192,14 +200,12 @@ class AngleWiseRKD(Distiller):
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
         loss_angle_wise = self.rkd_weight * angle_wise_loss(
-            teacher_logits=logits_teacher,
-            student_logits=logits_student,
-            with_l2_norm=self.with_l2_norm
+            teacher_logits=logits_teacher, student_logits=logits_student, with_l2_norm=self.with_l2_norm
         )
 
         loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_angle_wise': loss_angle_wise,
+            "loss_ce": loss_ce,
+            "loss_angle_wise": loss_angle_wise,
         }
 
         total_loss = loss_ce + loss_angle_wise
@@ -208,15 +214,18 @@ class AngleWiseRKD(Distiller):
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss
-    
+
 
 class CenterKernelAlignmentRKD(Distiller):
-    """ Center Kernel Alignment for Relational Knowledge Distillation"""
-    def __init__(self, teacher, student, ce_weight=1.0, rkd_weight=25, combined_KD=False, temperature=None, with_l2_norm=True):
+    """Center Kernel Alignment for Relational Knowledge Distillation"""
+
+    def __init__(
+        self, teacher, student, ce_weight=1.0, rkd_weight=25, combined_KD=False, temperature=None, with_l2_norm=True
+    ):
         super(CenterKernelAlignmentRKD, self).__init__(teacher=teacher, student=student)
         self.ce_weight = ce_weight
         self.rkd_weight = rkd_weight
@@ -234,14 +243,12 @@ class CenterKernelAlignmentRKD(Distiller):
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
         loss_cka = self.rkd_weight * cka_loss(
-            teacher_logits=logits_teacher,
-            student_logits=logits_student,
-            with_l2_norm=self.with_l2_norm
+            teacher_logits=logits_teacher, student_logits=logits_student, with_l2_norm=self.with_l2_norm
         )
 
         loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_cka': loss_cka,
+            "loss_ce": loss_ce,
+            "loss_cka": loss_cka,
         }
 
         total_loss = loss_ce + loss_cka
@@ -250,7 +257,7 @@ class CenterKernelAlignmentRKD(Distiller):
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss

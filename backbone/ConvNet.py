@@ -6,7 +6,7 @@
 import torch
 import torch.nn as nn
 
-__all__ = ['convnet']
+__all__ = ["convnet"]
 
 
 class ConvNet(nn.Module):
@@ -29,7 +29,6 @@ class ConvNet(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x, is_srrl=None):
-
         if not is_srrl is None:
             x = self.fc1(is_srrl)
             x = self.relu3(x)
@@ -65,14 +64,12 @@ class ConvNet(nn.Module):
             out = self.softmax(x)
 
             features = {}
-            features['features'] = [f0, f1, f2]
-            features['preact_features'] = [f0, f1_pre]
-            features['max_pooling'] = [f0_max, f1_max]
+            features["features"] = [f0, f1, f2]
+            features["preact_features"] = [f0, f1_pre]
+            features["max_pooling"] = [f0_max, f1_max]
 
             return out, features
 
 
 def convnet(dim, norm_layer, num_classes):
     return ConvNet(dim, norm_layer, num_classes)
-
-

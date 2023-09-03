@@ -21,10 +21,20 @@ def activation_sum(f_t, f_s, p):
     return f_t_sum, f_s_sum
 
 
-def at_loss(input_data, target, teacher_feature, student_feature, teacher_net, student_net, single_stage=False, at_method: str='activation_sum', p=2):
+def at_loss(
+    input_data,
+    target,
+    teacher_feature,
+    student_feature,
+    teacher_net,
+    student_net,
+    single_stage=False,
+    at_method: str = "activation_sum",
+    p=2,
+):
     # N, C, H, W ---> N, C, H * W
     method = at_method
-    if method.split('_')[0] == 'gradient':
+    if method.split("_")[0] == "gradient":
         return gradient_based_loss(input_data, target, teacher_net, student_net, at_method)
     else:
         if single_stage:
@@ -51,10 +61,10 @@ def single_stage_loss(f_t, f_s, at_method, p):
             min_size = min(s_W, s_H)
             f_t = F.adaptive_avg_pool2d(f_t, (min_size, min_size))
 
-    if at_method == 'activation_sum':
+    if at_method == "activation_sum":
         assert p >= 1
         f_t_q, f_s_q = activation_sum(f_t, f_s, p)
-    elif at_method == 'activation_max':
+    elif at_method == "activation_max":
         assert p >= 1
         f_t_q, f_s_q = activation_max(f_t, f_s, p)
 
@@ -70,9 +80,9 @@ def gradient_based_loss(input_data, target, teacher_net, student_net, at_method)
     # N, C, H, W
     input_data.requires_grad_()
 
-    if at_method == 'gradient_flip':
-        teacher_logits, _ = teacher_net(torch.flip(input_data, dims=[3])) # horizontal flip
-    elif at_method == 'gradient':
+    if at_method == "gradient_flip":
+        teacher_logits, _ = teacher_net(torch.flip(input_data, dims=[3]))  # horizontal flip
+    elif at_method == "gradient":
         teacher_logits, _ = teacher_net(input_data)
 
     student_logits, _ = student_net(input_data)
@@ -80,22 +90,29 @@ def gradient_based_loss(input_data, target, teacher_net, student_net, at_method)
     teacher_loss = F.cross_entropy(teacher_logits, target)
     student_loss = F.cross_entropy(student_logits, target)
 
-    teacher_gradients = torch.autograd.grad(teacher_loss, input_data,
-                                            create_graph=True)[0]
+    teacher_gradients = torch.autograd.grad(teacher_loss, input_data, create_graph=True)[0]
 
-    student_gradients = torch.autograd.grad(student_loss, input_data,
-                                            create_graph=True)[0]
+    student_gradients = torch.autograd.grad(student_loss, input_data, create_graph=True)[0]
 
     result = (teacher_gradients - student_gradients).pow(2).sum()
     return result
 
 
 class AT(Distiller):
-    """  Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer """
+    """Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer"""
 
-    def __init__(self, teacher, student, combined_KD=False,
-                ce_weight=1.0, feature_weight=1000.0, temperature=None, p=2,
-                single_stage=False, at_method: str= 'activation_sum'):
+    def __init__(
+        self,
+        teacher,
+        student,
+        combined_KD=False,
+        ce_weight=1.0,
+        feature_weight=1000.0,
+        temperature=None,
+        p=2,
+        single_stage=False,
+        at_method: str = "activation_sum",
+    ):
         super(AT, self).__init__(teacher=teacher, student=student)
         self.ce_weight = ce_weight
         self.feature_weight = feature_weight
@@ -117,19 +134,16 @@ class AT(Distiller):
         loss_at = self.feature_weight * at_loss(
             input_data=image,
             target=target,
-            teacher_feature=teacher_feature['features'][-1] if self.single_stage else teacher_feature['features'][1:],
-            student_feature=student_feature['features'][-1] if self.single_stage else student_feature['features'][1:],
+            teacher_feature=teacher_feature["features"][-1] if self.single_stage else teacher_feature["features"][1:],
+            student_feature=student_feature["features"][-1] if self.single_stage else student_feature["features"][1:],
             teacher_net=self.teacher,
             student_net=self.student,
             single_stage=self.single_stage,
             at_method=self.at_method,
-            p=self.p
+            p=self.p,
         )
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_at': loss_at
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_at": loss_at}
 
         total_loss = loss_ce + loss_at
 
@@ -137,7 +151,7 @@ class AT(Distiller):
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss

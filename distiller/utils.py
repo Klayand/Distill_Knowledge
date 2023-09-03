@@ -23,21 +23,22 @@ def get_feature_shapes(teacher, student, input_size, pooling=False):
         _, teacher_features = teacher(data)
         _, student_features = student(data)
 
-    teacher_feature_shapes = [feature.shape for feature in teacher_features['features']]
-    student_feature_shapes = [feature.shape for feature in student_features['features']]
+    teacher_feature_shapes = [feature.shape for feature in teacher_features["features"]]
+    student_feature_shapes = [feature.shape for feature in student_features["features"]]
 
     if pooling:
-        teacher_feature_shapes.append(teacher_features['avgpool_feature'].shape)
-        student_feature_shapes.append(student_features['avgpool_feature'].shape)
+        teacher_feature_shapes.append(teacher_features["avgpool_feature"].shape)
+        student_feature_shapes.append(student_features["avgpool_feature"].shape)
 
     return teacher_feature_shapes, student_feature_shapes
 
 
 class ConvReg(nn.Module):
-    """ Convolution Regression module
+    """Convolution Regression module
 
-        Todo: to make the guided layer shape equals the hint layer shape
+    Todo: to make the guided layer shape equals the hint layer shape
     """
+
     def __init__(self, teacher_shape, student_shape, use_relu=True):
         super(ConvReg, self).__init__()
         self.use_relu = use_relu
@@ -74,9 +75,7 @@ class ABF(nn.Module):
             nn.BatchNorm2d(mid_channel),
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(
-                mid_channel, out_channel, kernel_size=3, stride=1, padding=1, bias=False
-            ),
+            nn.Conv2d(mid_channel, out_channel, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(out_channel),
         )
         if fuse:

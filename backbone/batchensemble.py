@@ -56,17 +56,13 @@ class Ensemble_FC(nn.Module):
             curr_bs = x.size(0)
             makeup_bs = self.num_models - curr_bs
             if makeup_bs > 0:
-                indices = torch.randint(
-                    high=self.num_models, size=(curr_bs,), device=self.alpha.device
-                )
+                indices = torch.randint(high=self.num_models, size=(curr_bs,), device=self.alpha.device)
                 alpha = torch.index_select(self.alpha, 0, indices)
                 gamma = torch.index_select(self.gamma, 0, indices)
                 bias = torch.index_select(self.bias, 0, indices)
                 result = self.fc(x * alpha) * gamma + bias
             elif makeup_bs < 0:
-                indices = torch.randint(
-                    high=self.num_models, size=(curr_bs,), device=self.alpha.device
-                )
+                indices = torch.randint(high=self.num_models, size=(curr_bs,), device=self.alpha.device)
                 alpha = torch.index_select(self.alpha, 0, indices)
                 gamma = torch.index_select(self.gamma, 0, indices)
                 bias = torch.index_select(self.bias, 0, indices)
@@ -80,30 +76,24 @@ class Ensemble_FC(nn.Module):
                 x = torch.cat([x for i in range(self.num_models)], dim=0)
             # Repeated pattern: [[A,A],[B,B],[C,C]]
             batch_size = int(x.size(0) / self.num_models)
-            alpha = torch.cat([self.alpha for i in range(batch_size)], dim=1).view(
-                [-1, self.in_features]
-            )
-            gamma = torch.cat([self.gamma for i in range(batch_size)], dim=1).view(
-                [-1, self.out_features]
-            )
-            bias = torch.cat([self.bias for i in range(batch_size)], dim=1).view(
-                [-1, self.out_features]
-            )
+            alpha = torch.cat([self.alpha for i in range(batch_size)], dim=1).view([-1, self.in_features])
+            gamma = torch.cat([self.gamma for i in range(batch_size)], dim=1).view([-1, self.out_features])
+            bias = torch.cat([self.bias for i in range(batch_size)], dim=1).view([-1, self.out_features])
             result = self.fc(x * alpha) * gamma + bias
             return result
 
 
 class Ensemble_orderFC(nn.Module):
     def __init__(
-            self,
-            in_features,
-            out_features,
-            num_models,
-            first_layer=False,
-            bias=True,
-            constant_init=False,
-            p=0.5,
-            random_sign_init=False,
+        self,
+        in_features,
+        out_features,
+        num_models,
+        first_layer=False,
+        bias=True,
+        constant_init=False,
+        p=0.5,
+        random_sign_init=False,
     ):
         super(Ensemble_orderFC, self).__init__()
         self.in_features = in_features
@@ -132,9 +122,7 @@ class Ensemble_orderFC(nn.Module):
             if self.random_sign_init:
                 if self.probability == -1:
                     with torch.no_grad():
-                        factor = torch.ones(self.num_models, device=self.alpha.device).bernoulli_(
-                            0.5
-                        )
+                        factor = torch.ones(self.num_models, device=self.alpha.device).bernoulli_(0.5)
                         factor.mul_(2).add_(-1)
                         self.alpha.data = (self.alpha.t() * factor).t()
                         self.gamma.data = (self.gamma.t() * factor).t()
@@ -182,16 +170,10 @@ class Ensemble_orderFC(nn.Module):
         extra = x.size(0) - (num_examples_per_model * self.num_models)
         # Repeated pattern: [[A,A],[B,B],[C,C]]
         if num_examples_per_model != 0:
-            alpha = torch.cat([self.alpha for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.in_features]
-            )
-            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.out_features]
-            )
+            alpha = torch.cat([self.alpha for i in range(num_examples_per_model)], dim=1).view([-1, self.in_features])
+            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view([-1, self.out_features])
             if self.bias is not None:
-                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view(
-                    [-1, self.out_features]
-                )
+                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view([-1, self.out_features])
         else:
             alpha = self.alpha.clone()
             gamma = self.gamma.clone()
@@ -208,20 +190,20 @@ class Ensemble_orderFC(nn.Module):
 
 class Ensemble_Conv2d(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            padding=0,
-            groups=1,
-            first_layer=False,
-            num_models=100,
-            train_gamma=True,
-            bias=True,
-            constant_init=False,
-            p=0.5,
-            random_sign_init=False,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        groups=1,
+        first_layer=False,
+        num_models=100,
+        train_gamma=True,
+        bias=True,
+        constant_init=False,
+        p=0.5,
+        random_sign_init=False,
     ):
         super(Ensemble_Conv2d, self).__init__()
         self.in_channels = in_channels
@@ -257,9 +239,7 @@ class Ensemble_Conv2d(nn.Module):
             if self.random_sign_init:
                 if self.probability == -1:
                     with torch.no_grad():
-                        factor = torch.ones(self.num_models, device=self.alpha.device).bernoulli_(
-                            0.5
-                        )
+                        factor = torch.ones(self.num_models, device=self.alpha.device).bernoulli_(0.5)
                         factor.mul_(2).add_(-1)
                         self.alpha.data = (self.alpha.t() * factor).t()
                         if self.train_gamma:
@@ -314,18 +294,12 @@ class Ensemble_Conv2d(nn.Module):
             extra = x.size(0) - (num_examples_per_model * self.num_models)
 
             # Repeated pattern: [[A,A],[B,B],[C,C]]
-            alpha = torch.cat([self.alpha for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.in_channels]
-            )
+            alpha = torch.cat([self.alpha for i in range(num_examples_per_model)], dim=1).view([-1, self.in_channels])
             alpha.unsqueeze_(-1).unsqueeze_(-1)
-            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.out_channels]
-            )
+            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
             gamma.unsqueeze_(-1).unsqueeze_(-1)
             if self.bias is not None:
-                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view(
-                    [-1, self.out_channels]
-                )
+                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
                 bias.unsqueeze_(-1).unsqueeze_(-1)
 
             if extra != 0:
@@ -355,15 +329,11 @@ class Ensemble_Conv2d(nn.Module):
         else:
             num_examples_per_model = int(x.size(0) / self.num_models)
             # Repeated pattern: [[A,A],[B,B],[C,C]]
-            alpha = torch.cat([self.alpha for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.in_channels]
-            )
+            alpha = torch.cat([self.alpha for i in range(num_examples_per_model)], dim=1).view([-1, self.in_channels])
             alpha.unsqueeze_(-1).unsqueeze_(-1)
 
             if self.bias is not None:
-                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view(
-                    [-1, self.out_channels]
-                )
+                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
                 bias.unsqueeze_(-1).unsqueeze_(-1)
             result = self.conv(x * alpha)
             return result + bias if self.bias is not None else result
@@ -371,16 +341,16 @@ class Ensemble_Conv2d(nn.Module):
 
 class Ensemble_BatchNorm(nn.Module):
     def __init__(
-            self,
-            num_features,
-            num_models=1,
-            eps=1e-5,
-            momentum=0.1,
-            affine=True,
-            track_running_stats=True,
-            constant_init=False,
-            p=0.5,
-            random_sign_init=False,
+        self,
+        num_features,
+        num_models=1,
+        eps=1e-5,
+        momentum=0.1,
+        affine=True,
+        track_running_stats=True,
+        constant_init=False,
+        p=0.5,
+        random_sign_init=False,
     ):
         super(Ensemble_BatchNorm, self).__init__()
         self.num_models = num_models
@@ -391,9 +361,7 @@ class Ensemble_BatchNorm(nn.Module):
         self.constant_init = constant_init
         self.probability = p
         self.random_sign_init = random_sign_init
-        self.batch_norms = nn.ModuleList(
-            [nn.BatchNorm1d(num_features, affine=affine) for i in range(num_models)]
-        )
+        self.batch_norms = nn.ModuleList([nn.BatchNorm1d(num_features, affine=affine) for i in range(num_models)])
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -431,16 +399,16 @@ class Ensemble_BatchNorm(nn.Module):
 
 class Ensemble_BatchNorm2d(nn.Module):
     def __init__(
-            self,
-            num_features,
-            num_models=1,
-            eps=1e-5,
-            momentum=0.1,
-            affine=True,
-            track_running_stats=True,
-            constant_init=False,
-            p=0.5,
-            random_sign_init=False,
+        self,
+        num_features,
+        num_models=1,
+        eps=1e-5,
+        momentum=0.1,
+        affine=True,
+        track_running_stats=True,
+        constant_init=False,
+        p=0.5,
+        random_sign_init=False,
     ):
         super(Ensemble_BatchNorm2d, self).__init__()
         self.num_models = num_models
@@ -451,9 +419,7 @@ class Ensemble_BatchNorm2d(nn.Module):
         self.constant_init = constant_init
         self.probability = p
         self.random_sign_init = random_sign_init
-        self.batch_norms = nn.ModuleList(
-            [nn.BatchNorm2d(num_features, affine=affine) for i in range(num_models)]
-        )
+        self.batch_norms = nn.ModuleList([nn.BatchNorm2d(num_features, affine=affine) for i in range(num_models)])
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -491,15 +457,15 @@ class Ensemble_BatchNorm2d(nn.Module):
 
 class Ensemble_BatchNorm_fast(nn.Module):
     def __init__(
-            self,
-            num_features,
-            num_models=1,
-            eps=1e-5,
-            momentum=0.1,
-            affine=True,
-            track_running_stats=True,
-            constant_init=False,
-            random_sign_init=False,
+        self,
+        num_features,
+        num_models=1,
+        eps=1e-5,
+        momentum=0.1,
+        affine=True,
+        track_running_stats=True,
+        constant_init=False,
+        random_sign_init=False,
     ):
         super(Ensemble_BatchNorm, self).__init__()
         self.num_models = num_models
@@ -563,8 +529,8 @@ class Ensemble_BatchNorm_fast(nn.Module):
                         *input_size[2:],
                     ]
                 )
-                    .transpose(1, 2)
-                    .reshape(*input_size)
+                .transpose(1, 2)
+                .reshape(*input_size)
             )
             self.running_mean -= self.momentum * (self.running_mean - batch_mean)
             self.running_var -= self.momentum * (self.running_var - batch_var)
@@ -575,13 +541,11 @@ class Ensemble_BatchNorm_fast(nn.Module):
             input = input.permute(1, 0, 2, 3)
             if self.affine:
                 num_examples_per_model = input.size(0) // self.num_models
-                weight = torch.cat(
-                    [self.weight for i in range(num_examples_per_model)], dim=1
-                ).view([-1, self.num_features])
-                weight = weight.unsqueeze(-1).unsqueeze(-1)
-                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view(
+                weight = torch.cat([self.weight for i in range(num_examples_per_model)], dim=1).view(
                     [-1, self.num_features]
                 )
+                weight = weight.unsqueeze(-1).unsqueeze(-1)
+                bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view([-1, self.num_features])
                 bias = bias.unsqueeze(-1).unsqueeze(-1)
                 return input * weight + bias
             else:
@@ -676,13 +640,13 @@ class Ensemble_BatchNorm_fast(nn.Module):
 
 class Ensemble_GroupNorm(nn.GroupNorm):
     def __init__(
-            self,
-            num_features,
-            num_groups=4,
-            eps=1e-5,
-            momentum=0.1,
-            affine=False,
-            track_running_stats=True,
+        self,
+        num_features,
+        num_groups=4,
+        eps=1e-5,
+        momentum=0.1,
+        affine=False,
+        track_running_stats=True,
     ):
         self.num_groups = num_groups
         super(Ensemble_GroupNorm, self).__init__(num_groups, num_features, eps, affine=False)
@@ -712,15 +676,15 @@ class Ensemble_GroupNorm(nn.GroupNorm):
 
 class Ensemble_Conv2dBatchNorm(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            padding=0,
-            first_layer=False,
-            num_models=100,
-            bias=True,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        first_layer=False,
+        num_models=100,
+        bias=True,
     ):
         super(Ensemble_Conv2dBatchNorm, self).__init__()
         self.conv = Ensemble_Conv2d(
@@ -775,14 +739,10 @@ class Ensemble_Conv2dBatchNorm(nn.Module):
         inter_conv = self.norm_layer(self.conv(x))
         num_examples_per_model = int(x.size(0) / self.num_models)
         if self.train_gamma:
-            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.out_channels]
-            )
+            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
             gamma.unsqueeze_(-1).unsqueeze_(-1)
         if self.bias is not None:
-            bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.out_channels]
-            )
+            bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
             bias.unsqueeze_(-1).unsqueeze_(-1)
             return (inter_conv * gamma + bias) if self.train_gamma else inter_conv + bias
         else:
@@ -791,15 +751,15 @@ class Ensemble_Conv2dBatchNorm(nn.Module):
 
 class Ensemble_Conv2dBatchNorm_pre(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            padding=0,
-            first_layer=False,
-            num_models=100,
-            bias=True,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        first_layer=False,
+        num_models=100,
+        bias=True,
     ):
         super(Ensemble_Conv2dBatchNorm_pre, self).__init__()
         self.conv = Ensemble_Conv2d(
@@ -854,14 +814,10 @@ class Ensemble_Conv2dBatchNorm_pre(nn.Module):
         inter_conv = self.conv(self.norm_layer(x))
         num_examples_per_model = int(x.size(0) / self.num_models)
         if self.train_gamma:
-            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.out_channels]
-            )
+            gamma = torch.cat([self.gamma for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
             gamma.unsqueeze_(-1).unsqueeze_(-1)
         if self.bias is not None:
-            bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view(
-                [-1, self.out_channels]
-            )
+            bias = torch.cat([self.bias for i in range(num_examples_per_model)], dim=1).view([-1, self.out_channels])
             bias.unsqueeze_(-1).unsqueeze_(-1)
             return (inter_conv * gamma + bias) if self.train_gamma else inter_conv + bias
         else:
@@ -881,9 +837,7 @@ class Ensemble_Net(nn.Module):
     def forward(self, x):
         curr_bs = x.size(0)
         abs(self.num_models - curr_bs)
-        indices = torch.randint(
-            high=self.num_models, size=(curr_bs,), device=self.fc1.fc.weight.device
-        )
+        indices = torch.randint(high=self.num_models, size=(curr_bs,), device=self.fc1.fc.weight.device)
         for m_fc in self.fcs:
             m_fc.update_indices(indices)
         x = self.fc1(x.view(-1, 784))
@@ -913,9 +867,7 @@ class Ensemble_convNet(nn.Module):
     def forward(self, x, visualize=False):
         curr_bs = x.size(0)
         abs(self.num_models - curr_bs)
-        indices = torch.randint(
-            high=self.num_models, size=(curr_bs,), device=self.conv1.conv.weight.device
-        )
+        indices = torch.randint(high=self.num_models, size=(curr_bs,), device=self.conv1.conv.weight.device)
         for m_conv in self.convs:
             m_conv.update_indices(indices)
         for m_fc in self.fcs:

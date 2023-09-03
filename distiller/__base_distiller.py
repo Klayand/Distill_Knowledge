@@ -11,8 +11,7 @@ import torch.nn.functional as F
 
 
 class Distiller(nn.Module):
-    def __init__(self, student, teacher,
-                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
+    def __init__(self, student, teacher, device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(Distiller, self).__init__()
         self.student = student
         self.teacher = teacher
@@ -38,6 +37,3 @@ class Distiller(nn.Module):
     def forward_test(self, image):
         _, pred = torch.max(self.student(image.to(self.device)), dim=1)
         return pred
-
-
-

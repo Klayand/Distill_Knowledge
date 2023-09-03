@@ -19,9 +19,18 @@ class FitNet(Distiller):
         but you can use the adaptive pooling layer to make sure the shape the same
     """
 
-    def __init__(self, student, teacher, combined_KD=False, ce_weight=1.0,
-                 feature_weight=50.0, hint_layer=2, with_l2_norm=False,
-                 input_size=(32, 32), temperature=None):
+    def __init__(
+        self,
+        student,
+        teacher,
+        combined_KD=False,
+        ce_weight=1.0,
+        feature_weight=50.0,
+        hint_layer=2,
+        with_l2_norm=False,
+        input_size=(32, 32),
+        temperature=None,
+    ):
         super(FitNet, self).__init__(student=student, teacher=teacher)
 
         self.ce_weight = ce_weight
@@ -31,14 +40,14 @@ class FitNet(Distiller):
         self.hint_layer = hint_layer
         self.temperature = temperature
         self.input_size = input_size
-        self.combined_KD= combined_KD
+        self.combined_KD = combined_KD
 
-        self.teacher_feature_shapes, self.student_feature_shapes = get_feature_shapes(self.teacher,
-                                                                                      self.student,
-                                                                                      self.input_size)
+        self.teacher_feature_shapes, self.student_feature_shapes = get_feature_shapes(
+            self.teacher, self.student, self.input_size
+        )
         self.conv_reg = ConvReg(
             teacher_shape=self.teacher_feature_shapes[self.hint_layer],
-            student_shape=self.student_feature_shapes[self.hint_layer]
+            student_shape=self.student_feature_shapes[self.hint_layer],
         )
 
         self.with_l2_norm = with_l2_norm
@@ -52,11 +61,9 @@ class FitNet(Distiller):
         # Compute loss
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
-        regression_student_feature = self.conv_reg(
-            student_feature['features'][self.hint_layer]
-        )
+        regression_student_feature = self.conv_reg(student_feature["features"][self.hint_layer])
 
-        teacher_feature_hint = teacher_feature['features'][self.hint_layer]
+        teacher_feature_hint = teacher_feature["features"][self.hint_layer]
 
         if self.with_l2_norm:
             # spatial dimension normalizatiion
@@ -74,14 +81,11 @@ class FitNet(Distiller):
             teacher_feature_hint_normalized = F.normalize(teacher_feature_hint_reshape, dim=2)
             teacher_feature_hint = teacher_feature_hint_normalized.reshape(t_N, t_C, t_H, t_W)
 
-
-        loss_mse = self.feature_weight * F.mse_loss(
-            teacher_feature_hint, regression_student_feature
-        )
+        loss_mse = self.feature_weight * F.mse_loss(teacher_feature_hint, regression_student_feature)
 
         loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_mse': loss_mse,
+            "loss_ce": loss_ce,
+            "loss_mse": loss_mse,
         }
 
         total_loss = loss_ce + loss_mse
@@ -90,7 +94,7 @@ class FitNet(Distiller):
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss
@@ -103,4 +107,3 @@ class FitNet(Distiller):
         for param in self.conv_reg.parameters():
             num_parameters += param.numel()
         return num_parameters
-

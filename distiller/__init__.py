@@ -12,21 +12,25 @@ from .AB import ConvolutionAB, FullyConnectorAB
 from .DIST import DIST
 from .SRRL import SRRL
 from .WSLD import WSLD
+from .FT import FT
 
-__all__ = ['Distiller',
-           'KD',
-           'SP',
-           'NST',
-           'AT',
-           'DistanceWiseRKD',
-           'AngleWiseRKD',
-           'CenterKernelAlignmentRKD',
-           'ChannelWiseDivergence',
-           'FitNet',
-           'ReviewKD',
-           'DKD',
-           'ConvolutionAB',
-           'FullyConnectorAB',
-           'DIST',
-           'SRRL',
-           'WSLD']
+__all__ = [
+    "Distiller",
+    "KD",
+    "SP",
+    "NST",
+    "AT",
+    "DistanceWiseRKD",
+    "AngleWiseRKD",
+    "CenterKernelAlignmentRKD",
+    "ChannelWiseDivergence",
+    "FitNet",
+    "ReviewKD",
+    "DKD",
+    "ConvolutionAB",
+    "FullyConnectorAB",
+    "DIST",
+    "SRRL",
+    "WSLD",
+    "FT",
+]

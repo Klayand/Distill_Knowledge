@@ -11,16 +11,7 @@ Original Author: Wei Yang
 adding hyperparameter norm_layer: Huanran Chen
 """
 
-__all__ = [
-    "wrn",
-    "wrn_16_1",
-    "wrn_16_2",
-    "wrn_16_4",
-    "wrn_40_1",
-    "wrn_40_2",
-    "wrn_40_4",
-    "wrn_40_10"
-]
+__all__ = ["wrn", "wrn_16_1", "wrn_16_2", "wrn_16_4", "wrn_40_1", "wrn_40_2", "wrn_40_4", "wrn_40_10"]
 
 
 class BasicBlock(nn.Module):
@@ -28,22 +19,16 @@ class BasicBlock(nn.Module):
         super(BasicBlock, self).__init__()
         self.bn1 = norm_layer(in_planes)
         self.relu1 = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(
-            in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
-        )
+        self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn2 = norm_layer(out_planes)
         self.relu2 = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(
-            out_planes, out_planes, kernel_size=3, stride=1, padding=1, bias=False
-        )
+        self.conv2 = nn.Conv2d(out_planes, out_planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.droprate = dropRate
         self.equalInOut = in_planes == out_planes
         self.convShortcut = (
-                (not self.equalInOut)
-                and nn.Conv2d(
-            in_planes, out_planes, kernel_size=1, stride=stride, padding=0, bias=False
-        )
-                or None
+            (not self.equalInOut)
+            and nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, padding=0, bias=False)
+            or None
         )
 
     def forward(self, x):
@@ -59,19 +44,20 @@ class BasicBlock(nn.Module):
 
 
 class NetworkBlock(nn.Module):
-    def __init__(self, nb_layers, in_planes, out_planes, block, stride, dropRate=0.0,
-                 norm_layer=nn.BatchNorm2d):
+    def __init__(self, nb_layers, in_planes, out_planes, block, stride, dropRate=0.0, norm_layer=nn.BatchNorm2d):
         super(NetworkBlock, self).__init__()
-        self.layer = self._make_layer(block, in_planes, out_planes,
-                                      nb_layers, stride, dropRate, norm_layer)
+        self.layer = self._make_layer(block, in_planes, out_planes, nb_layers, stride, dropRate, norm_layer)
 
     def _make_layer(self, block, in_planes, out_planes, nb_layers, stride, dropRate, norm_layer):
         layers = []
         for i in range(nb_layers):
             layers.append(
                 block(
-                    i == 0 and in_planes or out_planes, out_planes, i == 0 and stride or 1, dropRate,
-                    norm_layer=norm_layer
+                    i == 0 and in_planes or out_planes,
+                    out_planes,
+                    i == 0 and stride or 1,
+                    dropRate,
+                    norm_layer=norm_layer,
                 )
             )
         return nn.Sequential(*layers)
@@ -81,8 +67,7 @@ class NetworkBlock(nn.Module):
 
 
 class WideResNet(nn.Module):
-    def __init__(self, depth, num_classes, widen_factor=1, dropRate=0.0,
-                 norm_layer=nn.BatchNorm2d):
+    def __init__(self, depth, num_classes, widen_factor=1, dropRate=0.0, norm_layer=nn.BatchNorm2d):
         super(WideResNet, self).__init__()
         nChannels = [16, 16 * widen_factor, 32 * widen_factor, 64 * widen_factor]
         assert (depth - 4) % 6 == 0, "depth should be 6n+4"
@@ -129,7 +114,6 @@ class WideResNet(nn.Module):
         return [bn1, bn2, bn3]
 
     def forward(self, x, is_feat=False, preact=False, is_srrl=None):
-
         if not is_srrl is None:
             out = F.avg_pool2d(is_srrl, 8)
             out = out.view(-1, self.nChannels)
@@ -157,9 +141,9 @@ class WideResNet(nn.Module):
             f3_pre = self.bn1(f3)
 
             features = {}
-            features['features'] = [f0, f1, f2, f3]
-            features['preact_features'] = [f0, f1_pre, f2_pre, f3_pre]
-            features['avgpool_feature'] = avg
+            features["features"] = [f0, f1, f2, f3]
+            features["preact_features"] = [f0, f1_pre, f2_pre, f3_pre]
+            features["avgpool_feature"] = avg
 
             return out, features
 

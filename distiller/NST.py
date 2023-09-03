@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from .__base_distiller import Distiller
 
 
-def nst_loss(teacher_feature, student_feature, single_stage=False, kernel_function: str = 'poly'):
+def nst_loss(teacher_feature, student_feature, single_stage=False, kernel_function: str = "poly"):
     # N, C, H, W ---> N, C, H * W
     if single_stage:
         return single_stage_loss(teacher_feature, student_feature, kernel_function)
@@ -14,7 +14,7 @@ def nst_loss(teacher_feature, student_feature, single_stage=False, kernel_functi
         return sum([single_stage_loss(f_t, f_s, kernel_function) for f_t, f_s in zip(teacher_feature, student_feature)])
 
 
-def single_stage_loss(f_t, f_s, kernel_function: str = 'poly'):
+def single_stage_loss(f_t, f_s, kernel_function: str = "poly"):
     # keep the spatial dimensions of F_t and F_s the same.
     # the number of channels may be the same.
 
@@ -39,20 +39,20 @@ def single_stage_loss(f_t, f_s, kernel_function: str = 'poly'):
     normalized_f_s = F.normalize(f_s, dim=2)
     normalized_f_t = F.normalize(f_t, dim=2)
 
-    if kernel_function == 'poly':
+    if kernel_function == "poly":
         # d=2, c=0
         # detach() create a copy of original tensor, but have no gradient, cannot be optimized
         return (
-                poly_kernel(normalized_f_t, normalized_f_t).mean().detach()
+            poly_kernel(normalized_f_t, normalized_f_t).mean().detach()
             + poly_kernel(normalized_f_s, normalized_f_s).mean()
             - 2 * poly_kernel(normalized_f_t, normalized_f_s).mean()
         )
 
-    elif kernel_function == 'linear':
+    elif kernel_function == "linear":
         # behave like AT
         return linear_kernel(normalized_f_t, normalized_f_s)
 
-    elif kernel_function == 'gaussian':
+    elif kernel_function == "gaussian":
         return guassian_kernel(normalized_f_t, normalized_f_s)
 
 
@@ -76,19 +76,28 @@ def linear_kernel(a, b):
 
 def guassian_kernel(a, b):
     import numpy as np
-    distance = torch.linalg.norm(a - b) # calculate Euclidean Distance
-    square_distance = distance ** 2
+
+    distance = torch.linalg.norm(a - b)  # calculate Euclidean Distance
+    square_distance = distance**2
     result = torch.exp(-square_distance / (2 * square_distance.mean()))
 
     return result
 
 
 class NST(Distiller):
-    """ Like What You Like: Knowledge Distill via Neuron Selectivity Transfer"""
+    """Like What You Like: Knowledge Distill via Neuron Selectivity Transfer"""
 
-    def __init__(self, teacher, student, combined_KD=False,
-                 ce_weight=1.0, feature_weight=50.0, temperature=None,
-                 single_stage=False, kernel_function: str='poly'):
+    def __init__(
+        self,
+        teacher,
+        student,
+        combined_KD=False,
+        ce_weight=1.0,
+        feature_weight=50.0,
+        temperature=None,
+        single_stage=False,
+        kernel_function: str = "poly",
+    ):
         super(NST, self).__init__(student=student, teacher=teacher)
         self.ce_weight = ce_weight
         self.feature_weight = feature_weight
@@ -113,16 +122,13 @@ class NST(Distiller):
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
         loss_nst = self.feature_weight * nst_loss(
-            teacher_feature=teacher_feature['features'][-1] if self.single_stage else teacher_feature['features'][1:],
-            student_feature=student_feature['features'][-1] if self.single_stage else student_feature['features'][1:],
+            teacher_feature=teacher_feature["features"][-1] if self.single_stage else teacher_feature["features"][1:],
+            student_feature=student_feature["features"][-1] if self.single_stage else student_feature["features"][1:],
             single_stage=self.single_stage,
-            kernel_function=self.kernel_function
+            kernel_function=self.kernel_function,
         )
 
-        loss_dict = {
-            'loss_ce': loss_ce,
-            'loss_nst': loss_nst
-        }
+        loss_dict = {"loss_ce": loss_ce, "loss_nst": loss_nst}
 
         total_loss = loss_ce + loss_nst
 
@@ -130,7 +136,7 @@ class NST(Distiller):
             from .KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
-            loss_dict['loss_kd'] = loss_kd
+            loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 
         return logits_student, loss_dict, total_loss

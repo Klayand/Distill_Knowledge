@@ -52,14 +52,13 @@ class CIFAR10(VisionDataset):
     }
 
     def __init__(
-            self,
-            root: str,
-            train: bool = True,
-            transform: Optional[Callable] = None,
-            target_transform: Optional[Callable] = None,
-            download: bool = False,
+        self,
+        root: str,
+        train: bool = True,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        download: bool = False,
     ) -> None:
-
         super().__init__(root, transform=transform, target_transform=target_transform)
 
         self.train = train  # training set or test set
@@ -172,67 +171,69 @@ class CIFAR100(CIFAR10):
     }
 
 
-def get_CIFAR100_train(batch_size=256,
-                       num_workers=8,
-                       pin_memory=True,
-                       augment=False,
-                       ):
+def get_CIFAR100_train(
+    batch_size=256,
+    num_workers=8,
+    pin_memory=True,
+    augment=False,
+):
     if not augment:
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
-        ])
+        transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
+            ]
+        )
     else:
-        transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-            transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
-            transforms.RandomRotation(5),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
-        ])
+        transform = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(),
+                transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
+                transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
+                transforms.RandomRotation(5),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
+            ]
+        )
 
-    set = CIFAR100('./resources/CIFAR100', train=True, download=True, transform=transform)
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
-                        shuffle=True)
+    set = CIFAR100("./resources/CIFAR100", train=True, download=True, transform=transform)
+    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
 
-def get_CIFAR100_test(batch_size=256,
-                      num_workers=8,
-                      pin_memory=False, ):
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
-    ])
-    set = CIFAR100('./resources/CIFAR100', train=False, download=True, transform=transform)
+def get_CIFAR100_test(
+    batch_size=256,
+    num_workers=8,
+    pin_memory=False,
+):
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
+        ]
+    )
+    set = CIFAR100("./resources/CIFAR100", train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
     return loader
 
 
-def get_CIFAR10_train(batch_size=256,
-                      num_workers=8,
-                      pin_memory=True,
-                      augment=False,
-                      validate=False
-                      ):
-
+def get_CIFAR10_train(batch_size=256, num_workers=8, pin_memory=True, augment=False, validate=False):
     if not augment:
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))
-        ])
+        transform = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))]
+        )
     else:
-        transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-            transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
-            transforms.RandomRotation(5),
-            transforms.ToTensor(),
-            transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616)),
-
-        ])
-    set = CIFAR10('./resources/CIFAR10', train=True, download=True, transform=transform)
+        transform = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(),
+                transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
+                transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
+                transforms.RandomRotation(5),
+                transforms.ToTensor(),
+                transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616)),
+            ]
+        )
+    set = CIFAR10("./resources/CIFAR10", train=True, download=True, transform=transform)
 
     if validate:
         train_size = int(0.8 * len(set))
@@ -241,26 +242,27 @@ def get_CIFAR10_train(batch_size=256,
         train_datasets = random_split(set, [train_size, validation_size])
         train_set, valiation_set = train_datasets
 
-        train_loader = DataLoader(train_set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
-                            shuffle=True)
-        validation_loader = DataLoader(valiation_set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
-                            shuffle=True)
+        train_loader = DataLoader(
+            train_set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True
+        )
+        validation_loader = DataLoader(
+            valiation_set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True
+        )
         return train_loader, validation_loader
 
     else:
-        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
-                            shuffle=True)
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
         return loader
 
 
-def get_CIFAR10_test(batch_size=256,
-                     num_workers=8,
-                     pin_memory=True, ):
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))
-    ])
-    set = CIFAR10('./resources/CIFAR10', train=False, download=True, transform=transform)
+def get_CIFAR10_test(
+    batch_size=256,
+    num_workers=8,
+    pin_memory=True,
+):
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))]
+    )
+    set = CIFAR10("./resources/CIFAR10", train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
     return loader
-
