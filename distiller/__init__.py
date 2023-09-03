@@ -11,6 +11,7 @@ from .DKD import DKD
 from .AB import ConvolutionAB, FullyConnectorAB
 from .DIST import DIST
 from .SRRL import SRRL
+from .WSLD import WSLD
 
 __all__ = ['Distiller',
            'KD',
@@ -27,4 +28,5 @@ __all__ = ['Distiller',
            'ConvolutionAB',
            'FullyConnectorAB',
            'DIST',
-           'SRRL']
+           'SRRL',
+           'WSLD']
