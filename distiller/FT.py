@@ -163,6 +163,19 @@ class FT(Distiller):
 
         return logits_student, loss_dict, total_loss
 
+    def get_learnable_parameters(self):
+        return (
+            super().get_learnable_parameters() + list(self.paraphraser.parameters()) + list(self.translator.parameters())
+        )
+
+    def get_extra_parameters(self):
+        num_param = 0
+        for param in self.paraphraser.parameters():
+            num_param += param.numel()
+        for param in self.translator.parameters():
+            num_param += param.numel()
+        return num_param
+
 
 class Paraphraser(nn.Module):
     """From original paper, the reconstruction loss should use l1 loss, if you use l2 loss, you should adjust the learning rate
