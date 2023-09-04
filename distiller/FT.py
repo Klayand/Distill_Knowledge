@@ -184,7 +184,7 @@ class Paraphraser(nn.Module):
     Also, the architecture of Paraphraser follows the original one.
     """
 
-    def __int__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1):
         super().__init__()
         self.leakyrelu = nn.LeakyReLU(0.1)
         # self.bn = nn.BatchNorm2d(in_planes)
@@ -246,7 +246,7 @@ class Paraphraser(nn.Module):
 
 
 class Translator(nn.Module):
-    def __int__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1):
         super(Translator, self).__init__()
 
         self.leakyrelu = nn.LeakyReLU(0.1)

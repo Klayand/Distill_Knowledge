@@ -32,10 +32,11 @@ def sr_loss(teacher_logits, student_logits, method: str = "mse", temperature=4):
 
 
 def fm_loss(teacher_feature, student_feature):
-    teacher_feature = teacher_feature.view(teacher_feature.size(0), teacher_feature.size(1), -1)
-    student_feature = student_feature.view(student_feature.size(0), student_feature.size(1), -1)
+    # normalized or not
+    teacher_feature = teacher_feature.view(teacher_feature.size(0), -1)
+    student_feature = student_feature.view(student_feature.size(0), -1)
 
-    loss = (teacher_feature.mean(dim=2) - student_feature.mean(dim=2)).pow(2).mean(1)
+    loss = (teacher_feature.mean(dim=1) - student_feature.mean(dim=1)).pow(2)
 
     return loss.mean()
 
