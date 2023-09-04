@@ -1,5 +1,7 @@
 """
     Knowledge Transfer via Distillation of Activation Boundaries Formed by Hidden Neurons
+    Still have some bugs, may be you should design a special architecture for each model pairs
+    The performance is very low.
 """
 import torch
 import torch.nn as nn

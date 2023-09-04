@@ -13,6 +13,7 @@ from .DIST import DIST
 from .SRRL import SRRL
 from .WSLD import WSLD
 from .FT import FT
+from .MGD import MGD
 
 __all__ = [
     "Distiller",
@@ -33,4 +34,5 @@ __all__ = [
     "SRRL",
     "WSLD",
     "FT",
+    "MGD",
 ]
