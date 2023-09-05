@@ -155,7 +155,7 @@ def get_mnist_m_train(
             transforms.Resize((32, 32)),
             transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,)),
+            # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
     set = MNISTM("../resources/mnistm", train=True, download=False, transform=transform)
@@ -175,7 +175,7 @@ def get_mnist_m_test(
             transforms.Resize((32, 32)),
             transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,)),
+            # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
     set = MNISTM("../resources/mnistm/", train=False, download=False, transform=transform)

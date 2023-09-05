@@ -242,15 +242,15 @@ class Solver:
 
 if __name__ == "__main__":
     import torchvision
-    from backbone import wrn_16_1, wrn_40_1, vgg11_bn
+    from backbone import wrn_16_1, wrn_40_1, vgg11_bn, CIFARNormModel
     from distiller import KD
     from data import get_CIFAR100_train, get_CIFAR100_test
     from LearnWhatYouDontKnow import LearnWhatYouDontKnow
     from generators import SimpleAug
 
     # train teacher model and student baseline model
-    student_model = wrn_16_1(num_classes=100)
-    teacher_model = wrn_40_1(num_classes=100)
+    student_model = CIFARNormModel(wrn_16_1(num_classes=100))
+    teacher_model = CIFARNormModel(wrn_40_1(num_classes=100))
 
     distiller = KD(teacher=teacher_model, student=student_model, ce_weight=1.0, kd_weight=1.0, temperature=4).to("cuda")
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     print()
 
     # for student baseline
-    student_baseline = vgg11_bn(num_classes=100)
+    student_baseline = CIFARNormModel(wrn_16_1(num_classes=100))
     s = Solver(teacher=student_baseline, student=teacher_model, distiller=distiller)
     s.train(train_loader, test_loader, total_epoch=1, is_student=True)
     print()

@@ -15,7 +15,7 @@ def get_svhn_train(
             transforms.Resize((32, 32)),
             transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,)),
+            # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
     set = SVHN("../resources/svhn/", split="train", download=True, transform=transform)
@@ -33,7 +33,7 @@ def get_svhn_test(
             transforms.Resize((32, 32)),
             transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,)),
+            # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
     set = SVHN("../resources/svhn/", split="test", download=True, transform=transform)

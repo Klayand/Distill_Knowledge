@@ -35,7 +35,7 @@ def get_pacs_dataset(target_domain, root="./data/pacs", download=True, augment=T
                 # transforms.RandomGrayscale(),
                 transforms.AutoAugment(),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
     else:
@@ -51,7 +51,7 @@ def get_pacs_dataset(target_domain, root="./data/pacs", download=True, augment=T
             # transforms.RandomGrayscale(),
             transforms.AutoAugment(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
     )
     test_dataset = NPACS(root=root, task=target_domain, transform=test_transform, download=download)

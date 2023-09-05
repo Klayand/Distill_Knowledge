@@ -1,5 +1,6 @@
 import torch
 from kornia import augmentation as KA
+from kornia.augmentation.auto import AutoAugment
 from torch import nn
 import torch.nn.functional as F
 from torchvision import transforms
@@ -37,10 +38,7 @@ class SimpleAug(nn.Module):
     ):
         super(SimpleAug, self).__init__()
         self.device = device
-        self.aug = KA.AugmentationSequential(
-            KA.ColorJitter(p([0.8, 0.8]), p([0.7, 0.7]), p([0.6, 0.6]), p([0.1, 0.1])),  # 我也不知道这参数是啥
-            KA.Normalize(mean, std),
-        )
+        self.aug = KA.AugmentationSequential(AutoAugment(policy="cifar10"))
         self.optimizer = torch.optim.SGD(self.aug.parameters(), lr=config["lr"], momentum=0.9)
         self.student = student
         self.teacher = teacher

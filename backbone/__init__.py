@@ -17,3 +17,12 @@ from .wrn import *
 from .PyramidNet import *
 from .ConvNet import *
 from .batchensemble import *
+from .NormBasedModel import (
+    CIFARNormModel,
+    ImageNetNormModel,
+    MnistNormModel,
+    MnistmNormModel,
+    PacsNormModel,
+    SvhnNormModel,
+    UspsNormModel,
+)
