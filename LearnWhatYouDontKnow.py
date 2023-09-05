@@ -179,7 +179,8 @@ class LearnWhatYouDontKnow:
 
             print(f"epoch {epoch}, distilling_loss = {train_loss}, distilling_acc = {train_acc}")
             print(f"epoch {epoch}, validation_loss = {test_loss}, validation_acc = {test_acc}")
-            print(f"student with distillation best acc {BEST_ACC}")
             print("*" * 100)
+
+        print(f"student with distillation best acc {BEST_ACC}")
 
         return self.student, BEST_ACC

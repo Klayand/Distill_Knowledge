@@ -32,8 +32,6 @@ class SimpleAug(nn.Module):
         student: nn.Module,
         teacher: nn.Module,
         config=default_generating_configuration(),
-        mean=[0.5071, 0.4867, 0.4408],
-        std=[0.2675, 0.2565, 0.2761],
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         super(SimpleAug, self).__init__()
@@ -43,23 +41,6 @@ class SimpleAug(nn.Module):
         self.student = student
         self.teacher = teacher
         self.config = config
-        self.mean = mean
-        self.std = std
-
-    def normalize_back(
-        self,
-        x: torch.tensor,
-    ):
-        """
-
-        :param x: N, C, H, D
-        :return:
-        """
-        # print(x.shape, torch.tensor(self.std).shape, torch.tensor(self.mean).shape)
-        x = x * torch.tensor(self.std, device=x.device).reshape(1, -1, 1, 1) + torch.tensor(
-            self.mean, device=x.device
-        ).reshape(1, -1, 1, 1)
-        return x
 
     def forward(self, x, y):
         x, y = x.to(self.device), y.to(self.device)
