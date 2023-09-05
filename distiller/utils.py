@@ -110,17 +110,27 @@ def hcl_loss(fstudent, fteacher):
     loss_all = 0.0
     for fs, ft in zip(fstudent, fteacher):
         n, c, h, w = fs.shape
-        loss = F.mse_loss(fs, ft, reduction="mean")
-        cnt = 1.0
-        tot = 1.0
-        for l in [4, 2, 1]:
-            if l >= h:
-                continue
-            tmpfs = F.adaptive_avg_pool2d(fs, (l, l))
-            tmpft = F.adaptive_avg_pool2d(ft, (l, l))
-            cnt /= 2.0
-            loss += F.mse_loss(tmpfs, tmpft, reduction="mean") * cnt
-            tot += cnt
-        loss = loss / tot
+        try:
+            loss = F.mse_loss(fs, ft, reduction="mean")
+            cnt = 1.0
+            tot = 1.0
+            for l in [4, 2, 1]:
+                if l >= h:
+                    continue
+                tmpfs = F.adaptive_avg_pool2d(fs, (l, l))
+                tmpft = F.adaptive_avg_pool2d(ft, (l, l))
+                cnt /= 2.0
+                loss += F.mse_loss(tmpfs, tmpft, reduction="mean") * cnt
+                tot += cnt
+                loss = loss / tot
+        except:
+            import warnings
+
+            warnings.filterwarnings("ignore", category=UserWarning)
+
+            ft = ft.reshape(ft.shape[0], -1)
+            fs = ft.reshape(fs.shape[0], -1)
+            loss = F.mse_loss(fs, ft, reduction="mean")
+
         loss_all = loss_all + loss
     return loss_all

@@ -1,8 +1,6 @@
 """
     Original author: https://github.com/dvlab-research/ReviewKD
     Verified by Zikai Zhou
-
-    Still existing some bugs
 """
 
 import torch
@@ -46,16 +44,21 @@ class ReviewKD(Distiller):
         self.out_shapes = []
 
         for i in range(len(self.student_features_shapes)):
-            if i != len(self.student_features_shapes) - 1:
-                self.in_channels.append(self.student_features_shapes[i][1])
-            if i != 0:
-                self.shapes.append(self.student_features_shapes[i][1])
+            self.in_channels.append(self.student_features_shapes[i][1])
+            self.out_channels.append(self.student_features_shapes[i][1])
 
         for i in range(len(self.teacher_features_shapes)):
             if i != len(self.teacher_features_shapes) - 1:
-                self.out_channels.append(self.teacher_features_shapes[i][1])
+                self.shapes.append(self.teacher_features_shapes[i][-1])
+            else:
+                self.shapes.append(1)
             if i != 0:
-                self.out_shapes.append(self.teacher_features_shapes[i][1])
+                self.out_shapes.append(self.teacher_features_shapes[i][-1])
+            else:
+                self.out_shapes.append(input_size[0])
+
+        self.out_shapes = self.out_shapes[::-1]
+        self.shapes = self.shapes[::-1]
 
         abfs = nn.ModuleList()
 
