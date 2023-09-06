@@ -25,38 +25,31 @@ class ImageNet10(ImageNet):
         return len(self.samples)
 
 
-def get_transform(augment=False):
-    if not augment:
-        transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                transforms.ToTensor(),
-            ]
-        )
-    else:
-        transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                # transforms.AutoAugment(transforms.AutoAugmentPolicy),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-            ]
-        )
-    return transform
-
-
 def get_imagenet_loader(
-    root="resources/ImageNet/",
+    root="resources/data/ImageNet/",
     split="val",
-    augment=False,
     batch_size=1,
     num_workers=8,
     pin_memory=False,
     shuffle=False,
+    transform=transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        ])
 ):
     assert split in ["val", "train"]
-    transform = get_transform(augment)
     set = ImageNet(root, split, transform=transform)
+
+    # train transform
+    # transform = transforms.Compose(
+    #     [
+    #         transforms.Resize((256, 256)),
+    #         # transforms.AutoAugment(transforms.AutoAugmentPolicy),
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #     ]
+    # )
+
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=shuffle)
     return loader
 
@@ -64,16 +57,18 @@ def get_imagenet_loader(
 def get_imagenet10_loader(
     target_class=(0, 100, 200, 300, 400, 500, 600, 700, 800, 900),
     maximum_images=None,
-    root="resources/ImageNet/",
+    root="resources/data/ImageNet/",
     split="val",
-    augment=False,
     batch_size=1,
     num_workers=8,
     pin_memory=False,
     shuffle=False,
+    transform=transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        ])
 ):
     assert split in ["val", "train"]
-    transform = get_transform(augment)
     set = ImageNet10(root, split, target_class=target_class, transform=transform, maximal_images=maximum_images)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=shuffle)
     return loader

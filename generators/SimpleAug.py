@@ -17,7 +17,7 @@ def default_generator_loss(student_out, teacher_out, label, alpha=1, beta=1):
 def default_generating_configuration():
     x = {
         "iter_step": 0,
-        "lr": 1e-2,
+        "lr": 0.1e-4,
         "criterion": default_generator_loss,
     }
     print("generating config:")
@@ -37,7 +37,7 @@ class SimpleAug(nn.Module):
         super(SimpleAug, self).__init__()
         self.device = device
         self.aug = KA.AugmentationSequential(AutoAugment(policy="cifar10"))
-        self.optimizer = torch.optim.SGD(self.aug.parameters(), lr=config["lr"], momentum=0.9)
+        self.optimizer = torch.optim.Adam(self.aug.parameters(), lr=config["lr"])
         self.student = student
         self.teacher = teacher
         self.config = config

@@ -8,8 +8,7 @@ from data import get_CIFAR100_train, get_CIFAR100_test
 from LearnWhatYouDontKnow import LearnWhatYouDontKnow
 from generators import SimpleAug
 
-# load teacher checkpoint and train student baseline
-
+# train teacher model and student baseline model
 student_model = CIFARNormModel(wrn_16_1(num_classes=100))
 teacher_model = CIFARNormModel(wrn_40_2(num_classes=100))
 ckpt = torch.load("./resources/checkpoints/wrn_40_2.pth", map_location=torch.device('cpu'))
@@ -33,12 +32,11 @@ transform = transforms.Compose(
 train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, transform=transform)
 test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
 
-# train teacher baseline
-# w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
-# w.train(train_loader, test_loader, total_epoch=1)
-# print()
-# print("Teacher model training completed!")
-# print()
+w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
+w.train(train_loader, test_loader, total_epoch=1)
+print()
+print("Teacher model training completed!")
+print()
 
 # for student baseline
 student_baseline = CIFARNormModel(wrn_16_1(num_classes=100))

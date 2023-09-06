@@ -18,7 +18,7 @@ def get_svhn_train(
             # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
-    set = SVHN("../resources/svhn/", split="train", download=True, transform=transform)
+    set = SVHN("../resources/data/svhn/", split="train", download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
@@ -36,6 +36,6 @@ def get_svhn_test(
             # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
-    set = SVHN("../resources/svhn/", split="test", download=True, transform=transform)
+    set = SVHN("../resources/data/svhn/", split="test", download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
     return loader

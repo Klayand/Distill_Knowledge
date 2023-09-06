@@ -158,7 +158,7 @@ def get_mnist_m_train(
             # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
-    set = MNISTM("../resources/mnistm", train=True, download=False, transform=transform)
+    set = MNISTM("../resources/data/mnistm", train=True, download=False, transform=transform)
 
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
 
@@ -178,7 +178,7 @@ def get_mnist_m_test(
             # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
-    set = MNISTM("../resources/mnistm/", train=False, download=False, transform=transform)
+    set = MNISTM("../resources/data/mnistm/", train=False, download=False, transform=transform)
 
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
 
