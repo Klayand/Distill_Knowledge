@@ -18,7 +18,7 @@ def get_usps_train(
             # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
-    set = USPS("../resources/data/usps/", train=True, download=True, transform=transform)
+    set = USPS("./resources/data/usps/", train=True, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
@@ -36,6 +36,6 @@ def get_usps_test(
             # transforms.Normalize((0.5,), (0.5,)),
         ]
     )
-    set = USPS("../resources/data/usps/", train=False, download=True, transform=transform)
+    set = USPS("./resources/data/usps/", train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
     return loader

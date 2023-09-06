@@ -26,7 +26,7 @@ class ImageNet10(ImageNet):
 
 
 def get_imagenet_loader(
-    root="resources/data/ImageNet/",
+    root="./resources/data/ImageNet/",
     split="val",
     batch_size=1,
     num_workers=8,
@@ -57,7 +57,7 @@ def get_imagenet_loader(
 def get_imagenet10_loader(
     target_class=(0, 100, 200, 300, 400, 500, 600, 700, 800, 900),
     maximum_images=None,
-    root="resources/data/ImageNet/",
+    root="./resources/data/ImageNet/",
     split="val",
     batch_size=1,
     num_workers=8,

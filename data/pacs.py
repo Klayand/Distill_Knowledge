@@ -68,12 +68,12 @@ def get_pacs_dataset(target_domain, root="./data/pacs", download=True, augment=T
 
 
 def get_PACS_train(batch_size=128, num_workers=0, pin_memory=True, augment=True, target_domain="A"):
-    set, _ = get_pacs_dataset(root="../resources/data/PACS", target_domain=target_domain, augment=augment)
+    set, _ = get_pacs_dataset(root="./resources/data/PACS", target_domain=target_domain, augment=augment)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
 
 def get_PACS_test(batch_size=128, num_workers=0, pin_memory=True, augment=False, target_domain="A"):
-    _, set = get_pacs_dataset(root="../resources/data/PACS", target_domain=target_domain, augment=augment)
+    _, set = get_pacs_dataset(root="./resources/data/PACS", target_domain=target_domain, augment=augment)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
