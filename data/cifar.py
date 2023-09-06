@@ -209,7 +209,7 @@ def get_CIFAR100_test(
     transform = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
+            # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
         ]
     )
     set = CIFAR100("./resources/CIFAR100", train=False, download=True, transform=transform)
@@ -220,7 +220,7 @@ def get_CIFAR100_test(
 def get_CIFAR10_train(batch_size=256, num_workers=8, pin_memory=True, augment=False, validate=False):
     if not augment:
         transform = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))]
+            [transforms.ToTensor()] # , transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))
         )
     else:
         transform = transforms.Compose(
@@ -230,7 +230,7 @@ def get_CIFAR10_train(batch_size=256, num_workers=8, pin_memory=True, augment=Fa
                 # transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
                 transforms.RandomRotation(5),
                 transforms.ToTensor(),
-                transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616)),
+                # transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616)),
             ]
         )
     set = CIFAR10("./resources/CIFAR10", train=True, download=True, transform=transform)
@@ -261,7 +261,7 @@ def get_CIFAR10_test(
     pin_memory=True,
 ):
     transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))]
+        [transforms.ToTensor()] # , transforms.Normalize(((0.4914, 0.4822, 0.4465)), (0.2470, 0.2435, 0.2616))
     )
     set = CIFAR10("./resources/CIFAR10", train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
