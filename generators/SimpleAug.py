@@ -32,7 +32,7 @@ class SimpleAug(nn.Module):
         student: nn.Module,
         teacher: nn.Module,
         config=default_generating_configuration(),
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        device=torch.device("cuda"),
     ):
         super(SimpleAug, self).__init__()
         self.device = device
