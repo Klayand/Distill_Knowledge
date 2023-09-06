@@ -182,5 +182,6 @@ class LearnWhatYouDontKnow:
             print("*" * 100)
 
         print(f"student with distillation best acc {BEST_ACC}")
+        torch.save(self.student.state_dict(), 'student_with_distillation.pth')
 
         return self.student, BEST_ACC

@@ -140,11 +140,11 @@ class Solver:
             print(f"epoch {epoch}, validation_loss = {validation_loss}, validation_acc = {validation_acc}")
             print("*" * 100)
 
-            # if is_student:
-            #     torch.save(self.teacher.state_dict(), 'student_baseline.pth')
-            # else:
-            #     torch.save(self.teacher.state_dict(), 'teacher.pth')
-            #     self.teacher_path = 'teacher.pth'
+            if is_student:
+                torch.save(self.teacher.state_dict(), 'student_baseline.pth')
+            else:
+                torch.save(self.teacher.state_dict(), 'teacher.pth')
+                self.teacher_path = 'teacher.pth'
 
         return self.teacher
 
