@@ -177,7 +177,7 @@ def get_CIFAR100_train(
         pin_memory=True,
         transform=transforms.ToTensor(),
 ):
-    set = CIFAR100("./resources/data/CIFAR100", train=True, download=True, transform=transform)
+    set = CIFAR100("../resources/data/CIFAR100", train=True, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
@@ -188,7 +188,7 @@ def get_CIFAR100_test(
         pin_memory=False,
         transform=transforms.ToTensor()
 ):
-    set = CIFAR100("./resources/data/CIFAR100", train=False, download=True, transform=transform)
+    set = CIFAR100("../resources/data/CIFAR100", train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
     return loader
 
@@ -212,7 +212,7 @@ def get_CIFAR10_train(
     #     ]
     # )
 
-    set = CIFAR10("./resources/data/CIFAR10", train=True, download=True, transform=transform)
+    set = CIFAR10("../resources/data/CIFAR10", train=True, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
@@ -223,6 +223,6 @@ def get_CIFAR10_test(
         pin_memory=True,
         transform=transforms.ToTensor()
 ):
-    set = CIFAR10("./resources/data/CIFAR10", train=False, download=True, transform=transform)
+    set = CIFAR10("../resources/data/CIFAR10", train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
     return loader
