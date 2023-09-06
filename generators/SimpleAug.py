@@ -1,6 +1,6 @@
 import torch
 from kornia import augmentation as KA
-from kornia.augmentation.auto import AutoAugment
+from generators.AutoAug import AutoAugment
 from torch import nn
 import torch.nn.functional as F
 from torchvision import transforms
