@@ -1,3 +1,5 @@
+import os
+
 import torch
 from torch import nn
 from torch import Callable
@@ -141,7 +143,8 @@ class Solver:
             print("*" * 100)
 
             if is_student:
-                torch.save(self.teacher.state_dict(), 'student_baseline.pth')
+                if os.path.exists('student_baseline.pth'):
+                    torch.save(self.teacher.state_dict(), 'student_baseline.pth')
             else:
                 torch.save(self.teacher.state_dict(), 'teacher.pth')
                 self.teacher_path = 'teacher.pth'
