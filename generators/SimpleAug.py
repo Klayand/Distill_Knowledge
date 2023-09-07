@@ -64,7 +64,6 @@ class SimpleAug(nn.Module):
         self.student.requires_grad_(True)
 
         # prepare for final
-        x = original_x.clone()
         # with torch.no_grad():
         #     x = self.normalize_back(original_x.clone())
         #     x = self.aug(x).detach()
