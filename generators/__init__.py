@@ -1,5 +1,5 @@
 """ For Data distillation project"""
 
-from .SimpleAug import SimpleAug
+from .DifferentiableAutoAug import DifferentiableAutoAug
 
-__all__ = ["SimpleAug"]
+__all__ = ["DifferentiableAutoAug"]
