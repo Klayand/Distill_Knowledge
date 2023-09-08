@@ -51,7 +51,6 @@ class SimpleAug(nn.Module):
         original_y = y.clone()
 
         for _ in range(self.config["iter_step"]):
-            x = self.normalize_back(original_x.clone())
             x = self.aug(x)
             loss = self.config["criterion"](self.student(x), self.teacher(x), y)
             self.optimizer.zero_grad()
@@ -64,7 +63,7 @@ class SimpleAug(nn.Module):
         self.student.requires_grad_(True)
 
         # prepare for final
-        x = original_x.clone()
+        # x = original_x.clone()
         # with torch.no_grad():
         #     x = self.normalize_back(original_x.clone())
         #     x = self.aug(x).detach()
