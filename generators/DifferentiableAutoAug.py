@@ -26,7 +26,7 @@ def default_generating_configuration():
     return x
 
 
-class SimpleAug(nn.Module):
+class DifferentiableAutoAug(nn.Module):
     def __init__(
         self,
         student: nn.Module,
@@ -34,13 +34,21 @@ class SimpleAug(nn.Module):
         config=default_generating_configuration(),
         device=torch.device("cuda"),
     ):
-        super(SimpleAug, self).__init__()
+        super(DifferentiableAutoAug, self).__init__()
         self.device = device
         self.aug = KA.AugmentationSequential(AutoAugment(policy="cifar10"))
         self.optimizer = torch.optim.Adam(self.aug.parameters(), lr=config["lr"])
         self.student = student
         self.teacher = teacher
         self.config = config
+
+    @torch.no_grad()
+    def clamp(self):
+        for name, param in self.aug.named_parameters():
+            if name == "":
+                param.data.clamp_(min=0, max=1)
+            elif name == "":
+                pass
 
     def forward(self, x, y):
         x, y = x.to(self.device), y.to(self.device)
@@ -51,6 +59,7 @@ class SimpleAug(nn.Module):
         original_y = y.clone()
 
         for _ in range(self.config["iter_step"]):
+            x = self.normalize_back(original_x.clone())
             x = self.aug(x)
             loss = self.config["criterion"](self.student(x), self.teacher(x), y)
             self.optimizer.zero_grad()
@@ -63,7 +72,6 @@ class SimpleAug(nn.Module):
         self.student.requires_grad_(True)
 
         # prepare for final
-        # x = original_x.clone()
         # with torch.no_grad():
         #     x = self.normalize_back(original_x.clone())
         #     x = self.aug(x).detach()
