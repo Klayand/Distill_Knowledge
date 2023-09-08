@@ -16,7 +16,7 @@ def default_generator_loss(student_out, teacher_out, label, alpha=1, beta=1):
 
 def default_generating_configuration():
     x = {
-        "iter_step": 0,
+        "iter_step": 1,
         "lr": 0.1e-4,
         "criterion": default_generator_loss,
     }
@@ -45,26 +45,26 @@ class DifferentiableAutoAug(nn.Module):
     @torch.no_grad()
     def clamp(self):
         for name, param in self.aug.named_parameters():
-            if name == "":
-                param.data.clamp_(min=0, max=1)
-            elif name == "":
-                pass
+            postfix = name.split('.')[-1]
+            if postfix == 'magnitude_range':
+                if ('ShearY' not in name) and ('Solarize' not in name) and ('Posterize' not in name):
+                    param = param.data.clamp_(min=0, max=1)
 
     def forward(self, x, y):
         x, y = x.to(self.device), y.to(self.device)
         self.aug.requires_grad_(True)
         self.student.eval()
-        self.student.requires_grad_(False)
+
         original_x = x.clone()
         original_y = y.clone()
 
         for _ in range(self.config["iter_step"]):
-            x = self.normalize_back(original_x.clone())
             x = self.aug(x)
-            loss = self.config["criterion"](self.student(x), self.teacher(x), y)
+            loss = self.config["criterion"](self.student(x)[0], self.teacher(x)[0], y)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            self.clamp()
 
         # give back
         self.aug.requires_grad_(False)
