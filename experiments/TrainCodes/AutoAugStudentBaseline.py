@@ -83,7 +83,7 @@ class LearnWhatYouDontKnow:
             self.student.train()
             for step, (x, y) in enumerate(pbar, 1):
                 x, y = x.to(self.device), y.to(self.device)
-                x, y = self.generator(x, y)
+                # x, y = self.generator(x, y)
 
                 with torch.no_grad():
                     teacher_out, teacher_feature = self.teacher(x)
@@ -95,23 +95,19 @@ class LearnWhatYouDontKnow:
 
                 if fp16:
                     with autocast():
-                        with torch.no_grad():
-                            student_out, student_feature = self.student(x)  # N, 60
+                        student_out, student_feature = self.student(x)  # N, 60
                         _, pre = torch.max(student_out, dim=1)
 
-                        self.student.train()
-
                         # distillation part
-                        student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                        # student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                        loss = self.criterion(student_out, y)
                 else:
-                    with torch.no_grad():
-                        student_out, student_feature = self.student(x)  # N, 60
+                    student_out, student_feature = self.student(x)  # N, 60
                     _, pre = torch.max(student_out, dim=1)
 
-                    self.student.train()
-
                     # distillation part
-                    student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                    # student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                    loss = self.criterion(student_out, y)
 
                     now_student_confidence = torch.mean(
                         F.softmax(student_out, dim=1)[torch.arange(y.shape[0] // 2), y[: y.shape[0] // 2]]
@@ -134,7 +130,7 @@ class LearnWhatYouDontKnow:
                     loss.backward()
                     # nn.utils.clip_grad_value_(self.student.parameters(), 0.1)
                     self.optimizer.step()
-                    
+
                 if step % 10 == 0:
                     pbar.set_postfix_str(f"loss={train_loss / step}, acc={train_acc / step}")
 

@@ -55,7 +55,7 @@ class DifferentiableAutoAug(nn.Module):
             postfix = name.split('.')[-1]
             if postfix == 'magnitude_range':
                 if ('ShearY' not in name) and ('Solarize' not in name) and ('Posterize' not in name):
-                    param = param.data.clamp_(min=0)
+                    param = param.data.clamp_(min=0, max=1)
 
     def forward(self, x, y):
         x, y = x.to(self.device), y.to(self.device)
@@ -84,4 +84,4 @@ class DifferentiableAutoAug(nn.Module):
         #     x = self.normalize_back(original_x.clone())
         #     x = self.aug(x).detach()
 
-        return torch.cat([x.detach(), original_x], dim=0), torch.cat([y.detach(), original_y], dim=0)
+        return (x, original_x), (y, original_y)

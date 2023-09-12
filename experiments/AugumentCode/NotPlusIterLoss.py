@@ -44,20 +44,15 @@ class DifferentiableAutoAug(nn.Module):
         self.teacher = teacher
         self.config = config
 
-        self.init()
-
-    def init(self):
-        self.aug.to(device=self.device)
-
     @torch.no_grad()
     def clamp(self):
         for name, param in self.aug.named_parameters():
             postfix = name.split('.')[-1]
             if postfix == 'magnitude_range':
                 if ('ShearY' not in name) and ('Solarize' not in name) and ('Posterize' not in name):
-                    param = param.data.clamp_(min=0)
+                    param = param.data.clamp_(min=0, max=1)
 
-    def forward(self, x, y):
+    def forward(self, x, y, epoch):
         x, y = x.to(self.device), y.to(self.device)
         self.aug.requires_grad_(True)
         self.student.eval()
@@ -69,10 +64,11 @@ class DifferentiableAutoAug(nn.Module):
             x = original_x
             x = self.aug(x)
             loss = self.config["criterion"](self.student(x)[0], self.teacher(x)[0], y)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-            self.clamp()
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        self.clamp()
 
         # give back
         self.aug.requires_grad_(False)

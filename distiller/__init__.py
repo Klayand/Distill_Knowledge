@@ -14,6 +14,8 @@ from .SRRL import SRRL
 from .WSLD import WSLD
 from .FT import FT
 from .MGD import MGD
+from .CC import MMDCCKD, BilinearCCKD, GaussianRBF
+from .FSP import FPS
 
 __all__ = [
     "Distiller",
@@ -35,4 +37,8 @@ __all__ = [
     "WSLD",
     "FT",
     "MGD",
+    "MMDCCKD",
+    "BilinearCCKD",
+    "GaussianRBF",
+    "FSP"
 ]

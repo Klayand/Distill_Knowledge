@@ -6,6 +6,7 @@ from .mnist import get_mnist_train, get_mnist_test
 from .usps import get_usps_train, get_usps_test
 from .svhn import get_svhn_train, get_svhn_test
 from .mnistm import get_mnist_m_train, get_mnist_m_test
+from .cifar10_edm import get_edm_cifar10_loader
 
 __all__ = [
     "get_CIFAR100_test",
@@ -24,4 +25,5 @@ __all__ = [
     "get_usps_train",
     "get_mnist_m_train",
     "get_mnist_m_test",
+    "get_edm_cifar10_loader"
 ]

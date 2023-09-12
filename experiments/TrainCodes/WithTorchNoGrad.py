@@ -16,15 +16,15 @@ def ce_loss(x, y):
 
 class LearnWhatYouDontKnow:
     def __init__(
-            self,
-            teacher: nn.Module,
-            student: nn.Module,
-            distiller: nn.Module or None = None,
-            generator=None,
-            loss_function: Callable or None = None,
-            optimizer: torch.optim.Optimizer or None = None,
-            scheduler=None,
-            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        self,
+        teacher: nn.Module,
+        student: nn.Module,
+        distiller: nn.Module or None = None,
+        generator=None,
+        loss_function: Callable or None = None,
+        optimizer: torch.optim.Optimizer or None = None,
+        scheduler=None,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         self.teacher = teacher
         self.student = student
@@ -53,11 +53,11 @@ class LearnWhatYouDontKnow:
         self.writer = SummaryWriter(log_dir="runs/baseline")
 
     def train(
-            self,
-            train_loader: DataLoader,
-            validation_loader: DataLoader,
-            total_epoch=500,
-            fp16=False,
+        self,
+        train_loader: DataLoader,
+        validation_loader: DataLoader,
+        total_epoch=500,
+        fp16=False,
     ):
         """
 
@@ -100,7 +100,6 @@ class LearnWhatYouDontKnow:
                         _, pre = torch.max(student_out, dim=1)
 
                         self.student.train()
-
                         # distillation part
                         student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
                 else:
@@ -109,7 +108,6 @@ class LearnWhatYouDontKnow:
                     _, pre = torch.max(student_out, dim=1)
 
                     self.student.train()
-
                     # distillation part
                     student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
 
@@ -134,7 +132,7 @@ class LearnWhatYouDontKnow:
                     loss.backward()
                     # nn.utils.clip_grad_value_(self.student.parameters(), 0.1)
                     self.optimizer.step()
-                    
+
                 if step % 10 == 0:
                     pbar.set_postfix_str(f"loss={train_loss / step}, acc={train_acc / step}")
 

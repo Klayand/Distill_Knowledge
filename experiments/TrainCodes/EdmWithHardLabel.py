@@ -50,7 +50,7 @@ class LearnWhatYouDontKnow:
         self.teacher.eval()
 
         # tensorboard
-        self.writer = SummaryWriter(log_dir="runs/baseline")
+        self.writer = SummaryWriter(log_dir="runs/baseline/kd_adam_edm_hard_label")
 
     def train(
             self,
@@ -81,45 +81,38 @@ class LearnWhatYouDontKnow:
 
             pbar = tqdm(train_loader)
             self.student.train()
-            for step, (x, y) in enumerate(pbar, 1):
-                x, y = x.to(self.device), y.to(self.device)
-                x, y = self.generator(x, y)
+            for step, x in enumerate(pbar, 1):
+                x = x.to(self.device)
+                # x, y = self.generator(x, y)
 
                 with torch.no_grad():
                     teacher_out, teacher_feature = self.teacher(x)
+                _, y = torch.max(teacher_out, dim=1)
 
-                    now_teacher_confidence = torch.mean(
-                        F.softmax(teacher_out, dim=1)[torch.arange(y.shape[0] // 2), y[: y.shape[0] // 2]]
-                    ).item()
-                    teacher_confidence += now_teacher_confidence
 
                 if fp16:
                     with autocast():
-                        with torch.no_grad():
-                            student_out, student_feature = self.student(x)  # N, 60
+                        student_out, student_feature = self.student(x)  # N, 60
                         _, pre = torch.max(student_out, dim=1)
 
-                        self.student.train()
+                        loss = self.criterion(student_out, y)
 
                         # distillation part
-                        student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                        # student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
                 else:
-                    with torch.no_grad():
-                        student_out, student_feature = self.student(x)  # N, 60
+                    student_out, student_feature = self.student(x)  # N, 60
                     _, pre = torch.max(student_out, dim=1)
 
-                    self.student.train()
+                    loss = self.criterion(student_out, y)
 
                     # distillation part
-                    student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                    # student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
 
                     now_student_confidence = torch.mean(
                         F.softmax(student_out, dim=1)[torch.arange(y.shape[0] // 2), y[: y.shape[0] // 2]]
                     ).item()
                     student_confidence += now_student_confidence
 
-                if pre.shape != y.shape:
-                    _, y = torch.max(y, dim=1)
                 train_acc += (torch.sum(pre == y).item()) / y.shape[0]
                 train_loss += loss.item()
                 self.optimizer.zero_grad()
@@ -134,7 +127,7 @@ class LearnWhatYouDontKnow:
                     loss.backward()
                     # nn.utils.clip_grad_value_(self.student.parameters(), 0.1)
                     self.optimizer.step()
-                    
+
                 if step % 10 == 0:
                     pbar.set_postfix_str(f"loss={train_loss / step}, acc={train_acc / step}")
 
@@ -144,7 +137,6 @@ class LearnWhatYouDontKnow:
             self.scheduler.step(train_loss, epoch)
 
             # tensorboard
-            self.writer.add_scalar("confidence/teacher_confidence", teacher_confidence / len(train_loader), epoch)
             self.writer.add_scalar("confidence/student_confidence", student_confidence / len(train_loader), epoch)
 
             self.writer.add_scalar("train/loss", train_loss, epoch)

@@ -4,7 +4,7 @@ from Solver import Solver, BEST_ACC_DICT
 from torchvision import transforms
 from backbone import wrn_16_2, wrn_40_2, vgg11_bn, CIFARNormModel
 from distiller import KD
-from data import get_CIFAR100_train, get_CIFAR100_test
+from data import get_CIFAR100_train, get_CIFAR100_test, get_edm_cifar10_loader
 from LearnWhatYouDontKnow import LearnWhatYouDontKnow
 from generators import DifferentiableAutoAug
 
@@ -30,8 +30,8 @@ transform = transforms.Compose(
         # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
     ]
 )
-train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, transform=transform)
-test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
+train_loader = get_CIFAR100_train(batch_size=128, num_workers=16, transform=transform)
+test_loader = get_CIFAR100_test(batch_size=128, num_workers=16)
 
 # train teacher baseline
 # w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
@@ -43,7 +43,7 @@ test_loader = get_CIFAR100_test(batch_size=128, num_workers=1)
 # for student baseline
 student_baseline = CIFARNormModel(wrn_16_2(num_classes=100))
 s = Solver(teacher=student_baseline, student=teacher_model, distiller=distiller)
-s.train(train_loader, test_loader, total_epoch=1, is_student=True)
+# s.train(train_loader, test_loader, total_epoch=1, is_student=True)
 print()
 print("Student model without distillation training completed!")
 print()
@@ -58,13 +58,13 @@ transform = transforms.Compose(
     [
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-        # transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
+        transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10),
         transforms.RandomRotation(5),
         transforms.ToTensor(),
         # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
     ]
 )
-train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, transform=transform)
+train_loader = get_edm_cifar10_loader(batch_size=128, num_workers=16, transform=transform, shuffle=True)
 
 generator = DifferentiableAutoAug(student=student_model, teacher=teacher_model)
 
@@ -73,7 +73,7 @@ leanrn_what_you_dont_konw = LearnWhatYouDontKnow(
 )
 
 _, distillation_acc = leanrn_what_you_dont_konw.train(
-    train_loader=train_loader, validation_loader=test_loader, total_epoch=1
+    train_loader=train_loader, validation_loader=test_loader, total_epoch=800
 )
 
 print()
