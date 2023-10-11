@@ -228,7 +228,7 @@ class ResNet(nn.Module):
             f3 = x
 
             x = self.avgpool(x)
-            x = x.view(x.size(0), -1)
+            x = x.view(x.size(0), -1)  # [N, -1]
             avg = x
 
             out = self.fc(x)

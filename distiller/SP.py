@@ -10,7 +10,7 @@ def compute_sp_loss(teacher_feature, student_feature):
     b_chw_teacher = teacher_feature.reshape(batch_size, -1)
     b_chw_student = student_feature.reshape(batch_size, -1)
 
-    G_teacher = torch.mm(b_chw_teacher, torch.t(b_chw_student))
+    G_teacher = torch.mm(b_chw_teacher, torch.t(b_chw_teacher))
     G_student = torch.mm(b_chw_student, torch.t(b_chw_student))
 
     G_teacher_normalized = torch.nn.functional.normalize(G_teacher)
@@ -74,7 +74,7 @@ class SP(Distiller):
 
         total_loss = loss_ce + loss_sp
 
-        if self.combined_kd:
+        if self.combined_KD:
             from KD import kd_loss
 
             loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)

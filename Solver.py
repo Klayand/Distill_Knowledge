@@ -8,6 +8,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from optimizer import SGD, Adam
 from scheduler import ALRS, CosineLRS
+from torch.utils.tensorboard import SummaryWriter
 
 BEST_ACC_DICT = {"teacher_acc": -999, "student_acc": -999, "distillation_acc": -999}
 
@@ -52,6 +53,9 @@ class Solver:
         self.teacher.to(self.device)
         self.student.to(self.device)
         self.distiller.to(self.device)
+
+        # tensorboard
+        self.writer = SummaryWriter(log_dir="runs/baseline")
 
         # module parameters initialization
 
@@ -130,6 +134,9 @@ class Solver:
                 validation_loss /= len(validation_loader)
                 validation_acc /= len(validation_loader)
 
+                self.writer.add_scalar("test/loss", validation_loss, epoch)
+                self.writer.add_scalar("test/acc", validation_acc, epoch)
+
                 if is_student:
                     if validation_acc > BEST_ACC_DICT["student_acc"]:
                         BEST_ACC_DICT["student_acc"] = validation_acc
@@ -204,6 +211,10 @@ class Solver:
                     pbar.set_postfix_str(f"distill loss={train_loss / step}")
 
             train_loss /= len(train_loader)
+
+            # tensorboard
+            self.writer.add_scalar("train/loss/distill_loss", train_loss, epoch)
+            self.writer.add_scalar("train/learning_rate", self.student_optimizer.param_groups[0]["lr"], epoch)
 
             # validation
             vbar = tqdm(validation_loader, colour="yellow")

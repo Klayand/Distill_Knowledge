@@ -44,11 +44,6 @@ class DifferentiableAutoAug(nn.Module):
         self.teacher = teacher
         self.config = config
 
-        self.init()
-
-    def init(self):
-        self.aug.to(device=self.device)
-
     @torch.no_grad()
     def clamp(self):
         for name, param in self.aug.named_parameters():

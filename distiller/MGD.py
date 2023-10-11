@@ -106,10 +106,8 @@ class MGDLoss(nn.Module):
 
         masked_feature = torch.mul(student_feature, mat)
 
-        print(self.generation.modules())
-        print(masked_feature.shape)
         generated_feature = self.generation(masked_feature)
-        assert False
+
         mgd_loss = loss_mse(generated_feature, teacher_feature) / N
 
         return mgd_loss

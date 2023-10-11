@@ -16,7 +16,12 @@ from .FT import FT
 from .MGD import MGD
 from .CC import MMDCCKD, BilinearCCKD, GaussianRBF
 from .FSP import FPS
+from .VID import LogitsBasedVID, FeatureBasedVID
+from .PKD import PKD
+from .CRD import CRD
+from .KDSVD import KDSVD
 
+from .SPDISTCKA import SPDISTCKA
 __all__ = [
     "Distiller",
     "KD",
@@ -40,5 +45,11 @@ __all__ = [
     "MMDCCKD",
     "BilinearCCKD",
     "GaussianRBF",
-    "FSP"
+    "FSP",
+    "FeatureBasedVID",
+    "LogitsBasedVID",
+    "PKD",
+    "CRD",
+    "KDSVD",
+    "SPDISTCKA"
 ]

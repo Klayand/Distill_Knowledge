@@ -6,7 +6,10 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from optimizer import SGD, Adam
-from scheduler import ALRS, Lambda_EMD
+from scheduler import ALRS, LambdaLR, Lambda_EMD
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+from utils import CLASS_NAME
 
 
 def ce_loss(x, y):
@@ -25,6 +28,8 @@ class LearnWhatYouDontKnow:
             optimizer: torch.optim.Optimizer or None = None,
             scheduler=None,
             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+            ddp=False,
+            local_rank=None,
     ):
         self.teacher = teacher
         self.student = student
@@ -34,8 +39,10 @@ class LearnWhatYouDontKnow:
 
         self.criterion = loss_function if loss_function is not None else ce_loss
         self.optimizer = optimizer if optimizer is not None else SGD(self.student)
-        self.scheduler = scheduler if scheduler is not None else Lambda_EMD(self.optimizer)
+        self.scheduler = scheduler if scheduler is not None else ALRS(self.optimizer)
         self.device = device
+        self.ddp = ddp
+        self.local_rank = local_rank
 
         # initialization
         self.init()
@@ -47,10 +54,12 @@ class LearnWhatYouDontKnow:
         # change device
         self.teacher.to(self.device)
         self.student.to(self.device)
+
+        self.studnet = DDP(self.student, device_ids=[self.local_rank], output_device=self.local_rank)
         self.teacher.eval()
 
         # tensorboard
-        self.writer = SummaryWriter(log_dir="runs/baseline/kd_adam_edm_hard_label")
+        self.writer = SummaryWriter(log_dir="runs/baseline/edm_pyramidnet272_alrs_batchsize")
 
     def train(
             self,
@@ -76,25 +85,37 @@ class LearnWhatYouDontKnow:
 
         # train
         for epoch in range(1, total_epoch + 1):
+
+            train_loader.sampler.set_epoch(epoch)
+
             train_loss, train_acc = 0, 0
+            # train_ce_loss, train_distill_loss = 0, 0
             student_confidence, teacher_confidence = 0, 0
+
+            # generator_teacher_loss, generator_student_loss, generator_total_loss = 0, 0, 0
 
             pbar = tqdm(train_loader)
             self.student.train()
-            for step, x in enumerate(pbar, 1):
-                x = x.to(self.device)
-                # x, y = self.generator(x, y)
+            for step, (x, y) in enumerate(pbar, 1):
+                x, y = x.to(self.device), y.to(self.device)
+                # x, y, generator_loss_dict = self.generator(x, y)
+
+                # generator_teacher_loss += generator_loss_dict['teacher_loss'].item()
+                # generator_student_loss += generator_loss_dict['student_loss'].item()
+                # generator_total_loss += generator_loss_dict['total_loss'].item()
 
                 with torch.no_grad():
-                    # teacher_out, teacher_feature = self.teacher(x)
-                    teacher_out = self.teacher(x)
-                _, y = torch.max(teacher_out, dim=1)
+                    teacher_out, teacher_feature = self.teacher(x)
+
+                    now_teacher_confidence = torch.mean(
+                        F.softmax(teacher_out, dim=1)[torch.arange(y.shape[0] // 2), y[: y.shape[0] // 2]]
+                    ).item()
+                    teacher_confidence += now_teacher_confidence
 
                 if fp16:
                     with autocast():
                         student_out, student_feature = self.student(x)  # N, 60
                         _, pre = torch.max(student_out, dim=1)
-
                         loss = self.criterion(student_out, y)
 
                         # distillation part
@@ -102,7 +123,6 @@ class LearnWhatYouDontKnow:
                 else:
                     student_out, student_feature = self.student(x)  # N, 60
                     _, pre = torch.max(student_out, dim=1)
-
                     loss = self.criterion(student_out, y)
 
                     # distillation part
@@ -113,7 +133,10 @@ class LearnWhatYouDontKnow:
                     ).item()
                     student_confidence += now_student_confidence
 
+                if pre.shape != y.shape:
+                    _, y = torch.max(y, dim=1)
                 train_acc += (torch.sum(pre == y).item()) / y.shape[0]
+
                 train_loss += loss.item()
                 self.optimizer.zero_grad()
 
@@ -132,17 +155,37 @@ class LearnWhatYouDontKnow:
                     pbar.set_postfix_str(f"loss={train_loss / step}, acc={train_acc / step}")
 
             train_loss /= len(train_loader)
+            # train_ce_loss /= len(train_loader)
+            # train_distill_loss /= len(train_loader)
+
+            # generator_teacher_loss /= len(train_loader)
+            # generator_student_loss /= len(train_loader)
+            # generator_total_loss /= len(train_loader)
+
             train_acc /= len(train_loader)
 
-            self.scheduler.step(epoch)
+            self.scheduler.step(train_loss, epoch)
 
             # tensorboard
+            self.writer.add_scalar("confidence/teacher_confidence", teacher_confidence / len(train_loader), epoch)
             self.writer.add_scalar("confidence/student_confidence", student_confidence / len(train_loader), epoch)
 
-            self.writer.add_scalar("train/loss", train_loss, epoch)
+            self.writer.add_scalar("train/loss/total_loss", train_loss, epoch)
+            # self.writer.add_scalar("train/loss/ce_loss", train_ce_loss, epoch)
+            # self.writer.add_scalar("train/loss/distill_loss", train_distill_loss, epoch)
+
+            # self.writer.add_scalar("generator/loss/total_loss", generator_total_loss, epoch)
+            # self.writer.add_scalar("generator/loss/teacher_loss", generator_teacher_loss, epoch)
+            # self.writer.add_scalar("generator/loss/student_loss", generator_student_loss, epoch)
+
             self.writer.add_scalar("train/acc", train_acc, epoch)
 
             self.writer.add_scalar("train/learning_rate", self.optimizer.param_groups[0]["lr"], epoch)
+
+            ## tensorboard add image
+            # image = x[: x.size(0) // 2][0].squeeze()
+            # label = CLASS_NAME[y[: y.size(0) // 2][0].squeeze().item()]
+            # self.writer.add_image(f"generator/images/{label}", image, epoch)
 
             # validation
             vbar = tqdm(validation_loader, colour="yellow")
@@ -176,11 +219,11 @@ class LearnWhatYouDontKnow:
                 if test_acc > BEST_ACC:
                     BEST_ACC = test_acc
 
-            print(f"epoch {epoch}, distilling_loss = {train_loss}, distilling_acc = {train_acc}")
+            print(f"epoch {epoch}, train_loss = {train_loss}, train_acc = {train_acc}")
             print(f"epoch {epoch}, validation_loss = {test_loss}, validation_acc = {test_acc}")
             print("*" * 100)
 
         print(f"student with distillation best acc {BEST_ACC}")
-        torch.save(self.student.state_dict(), 'student_with_distillation.pth')
+        # torch.save(self.student.state_dict(), 'student_with_distillation.pth')
 
         return self.student, BEST_ACC

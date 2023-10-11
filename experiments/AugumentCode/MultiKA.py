@@ -10,12 +10,9 @@ from torchvision import transforms
 p = lambda x: nn.Parameter(torch.tensor(x))
 
 
-def default_generator_loss(student_out, teacher_out, label, alpha=3, beta=1, student_loss_max=2):
+def default_generator_loss(student_out, teacher_out, label, alpha=3, beta=1):
     t_loss = F.cross_entropy(teacher_out, label)
     s_loss = F.cross_entropy(student_out, label)
-
-    if s_loss > student_loss_max:
-        s_loss = s_loss / s_loss.item() * student_loss_max
 
     loss_dict = {
         'teacher_loss': alpha * t_loss,
@@ -68,8 +65,8 @@ class DifferentiableAutoAug(nn.Module):
         self.config = config
 
     @torch.no_grad()
-    def clamp(self, model):
-        for name, param in model.named_parameters():
+    def clamp(self):
+        for name, param in self.model_list.named_parameters():
             postfix = name.split('.')[-1]
             if postfix == 'magnitude_range':
                 if 'ShearX' in name:
@@ -111,13 +108,12 @@ class DifferentiableAutoAug(nn.Module):
             # 最好不要使用clamp_，这个是inplace操作，会导致错误。
             for model in self.model_list:
                 x = model(x).clamp(min=0, max=1)
-                self.clamp(model)
 
             loss, loss_dict = self.config["criterion"](self.student(x)[0], self.teacher(x)[0], y)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-
+            self.clamp()
 
         # give back
         self.model_list.requires_grad_(False)

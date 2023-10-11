@@ -9,7 +9,7 @@ import numpy as np
 class CIFAR10EDM(Dataset):
     def __init__(self, img_path, gt_path=None, transform=transforms.ToTensor()):
         self.img_path = img_path
-        self.images = [img for img in os.listdir(img_path) if img.endswith('jpg')]
+        self.images = [img for img in os.listdir(img_path) if img.endswith('png')]
 
         self.transforms = transform
 
@@ -36,7 +36,7 @@ def get_edm_cifar10_loader(
         shuffle=False,
         transform=transforms.ToTensor()
 ):
-    dataset = CIFAR10EDM(img_path='./resources/data/edm_cifar10', transform=transform)
+    dataset = CIFAR10EDM(img_path='./resources/data/edm-cifar10', transform=transform)
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,

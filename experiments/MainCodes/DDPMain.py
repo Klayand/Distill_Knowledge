@@ -1,30 +1,35 @@
+import argparse
+from torchvision import transforms
 import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from Solver import Solver, BEST_ACC_DICT
-from torchvision import transforms
-from backbone import wrn_16_2, wrn_40_2, CIFARNormModel, pyramidnet272
+from backbone import wrn_16_2, wrn_40_2, pyramidnet272, CIFARNormModel
 from distiller import KD
-from data import get_CIFAR100_train, get_CIFAR100_test, get_edm_cifar10_loader
+from data import get_CIFAR100_train, get_CIFAR100_test, get_edm_cifar100_loader
 from LearnWhatYouDontKnow import LearnWhatYouDontKnow
 from generators import DifferentiableAutoAug
-import torch.nn as nn
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--local_rank', default=-1, type=int)
+arg = parser.parse_args()
+local_rank = arg.local_rank
+
+torch.cuda.set_device(local_rank)
+dist.init_process_group(backend='nccl')
 
 # load teacher checkpoint and train student baseline
+student_model = CIFARNormModel(pyramidnet272(num_classes=100))
+teacher_model = CIFARNormModel(wrn_40_2(num_classes=100))
+ckpt = torch.load("./resources/checkpoints/wrn_40_2.pth")
+teacher_model.model.load_state_dict(ckpt["model"])
 
-student_model = CIFARNormModel(wrn_16_2(num_classes=100))
-# teacher_model = CIFARNormModel(resnet32x4(num_classes=100))
-# ckpt = torch.load("./resources/checkpoints/resnet32x4.pth", map_location=torch.device("cuda"))
-# teacher_model.model.load_state_dict(ckpt['model'])
-
-teacher_model = CIFARNormModel(pyramidnet272(num_classes=100))
-ckpt = torch.load("./resources/checkpoints/cifar100_pyramid272_top1_11.74.pth", map_location=torch.device("cuda"))
-teacher_model.model.load_state_dict(ckpt["model"], strict=False)
-
-distiller = KD(teacher=teacher_model, student=student_model, ce_weight=1.0, kd_weight=1.0, temperature=4).to("cuda")
+distiller = KD(teacher=teacher_model, student=student_model, ce_weight=1.0, kd_weight=1.0, temperature=4).to('cuda')
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Training baseline loader
-
 transform = transforms.Compose(
     [
         transforms.RandomHorizontalFlip(),
@@ -35,8 +40,8 @@ transform = transforms.Compose(
         # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
     ]
 )
-train_loader = get_CIFAR100_train(batch_size=128, num_workers=16, transform=transform)
-test_loader = get_CIFAR100_test(batch_size=128, num_workers=16)
+# train_loader = get_CIFAR100_train(batch_size=128, num_workers=1, transform=transform)
+test_loader = get_CIFAR100_test(batch_size=128, num_workers=3)
 
 # train teacher baseline
 # w = Solver(teacher=teacher_model, student=student_model, distiller=distiller)
@@ -69,16 +74,16 @@ transform = transforms.Compose(
         # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
     ]
 )
-train_loader = get_edm_cifar10_loader(batch_size=128, num_workers=16, shuffle=True)
+train_loader = get_edm_cifar100_loader(batch_size=2560, num_workers=3, transform=transform, ddp=True, shuffle=False)
 
 generator = DifferentiableAutoAug(student=student_model, teacher=teacher_model)
 
 learn_what_you_dont_konw = LearnWhatYouDontKnow(
-    teacher=teacher_model, student=student_model, distiller=distiller, generator=generator
+    teacher=teacher_model, student=student_model, distiller=distiller, generator=generator, ddp=True, local_rank=local_rank
 )
 
 _, distillation_acc = learn_what_you_dont_konw.train(
-    train_loader=train_loader, validation_loader=test_loader, total_epoch=150
+    train_loader=train_loader, validation_loader=test_loader, total_epoch=200
 )
 
 print()

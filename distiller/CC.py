@@ -2,7 +2,7 @@
     Correlation Congruence for Knowledge Distillation
         introduce instances congruence between teacher and student, behaving like KD
         introduce instances congruence between samples in teacher and student, behaving like NST
-        However, in NST, it uses features and logits. In CCKD, it just uses logits?????.
+        However, in NST, it uses features. In CCKD, it just uses logits?????.
 
         loss function can be reconstructed.
 
@@ -51,7 +51,7 @@ from .__base_distiller import Distiller
 from .KD import kd_loss
 
 
-def compute_binlinear_loss(teacher_logits, student_logits, batch_size):
+def compute_bilinear_loss(teacher_logits, student_logits, batch_size):
     teacher_metric = torch.matmul(teacher_logits, torch.t(teacher_logits))
     student_metric = torch.matmul(student_logits, torch.t(student_logits))
 
@@ -190,7 +190,7 @@ class BilinearCCKD(Distiller):
         loss_ce = self.alpha * F.cross_entropy(logits_student, target)
         loss_kd = (1 - self.alpha) * kd_loss(logits_student, logits_teacher, temperature=self.temperature)
 
-        loss_cckd = self.beta * compute_binlinear_loss(teacher_logits=logits_teacher, student_logits=logits_student,
+        loss_cckd = self.beta * compute_bilinear_loss(teacher_logits=logits_teacher, student_logits=logits_student,
                                                        batch_size=batch_size)
 
         loss_dict = {

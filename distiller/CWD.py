@@ -43,7 +43,7 @@ class ChannelWiseDivergence(Distiller):
     2. fusing inner feature map and score logits together.
 
     Here I just choose the former. And I think the activation maps only involve the
-    inner feature maps, you can set combie_KD=True to introduce the final score logits.
+    inner feature maps, you can set combine_KD=True to introduce the final score logits.
     """
 
     def __init__(
@@ -79,7 +79,7 @@ class ChannelWiseDivergence(Distiller):
         if self.combined_KD:
             from .KD import kd_loss
 
-            loss_kd = self.cwd_weight * kd_loss(logits_student, logits_teacher, self.temperature)
+            loss_kd = kd_loss(logits_student, logits_teacher, self.temperature)
             loss_dict["loss_kd"] = loss_kd
             total_loss += loss_kd
 

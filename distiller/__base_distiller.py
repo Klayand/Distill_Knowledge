@@ -35,5 +35,5 @@ class Distiller(nn.Module):
         raise NotImplementedError()
 
     def forward_test(self, image):
-        _, pred = torch.max(self.student(image.to(self.device)), dim=1)
+        _, pred = torch.max(self.student(image.to(self.device)[0]), dim=1)
         return pred

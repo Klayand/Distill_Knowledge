@@ -6,13 +6,24 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from optimizer import SGD, Adam
-from scheduler import ALRS, Lambda_EMD
+from scheduler import ALRS
+from torch.optim.lr_scheduler import MultiStepLR, LambdaLR
+
+from utils import CLASS_NAME
 
 
 def ce_loss(x, y):
     cross_entropy = F.cross_entropy(x, y)
     return cross_entropy
 
+
+def lr_lambda(epoch):
+    if epoch < 300:
+        return 0.1
+    elif epoch < 500:
+        return 0.04
+    else:
+        return 0.01
 
 class LearnWhatYouDontKnow:
     def __init__(
@@ -34,7 +45,8 @@ class LearnWhatYouDontKnow:
 
         self.criterion = loss_function if loss_function is not None else ce_loss
         self.optimizer = optimizer if optimizer is not None else SGD(self.student)
-        self.scheduler = scheduler if scheduler is not None else Lambda_EMD(self.optimizer)
+        # self.scheduler = scheduler if scheduler is not None else ALRS(self.optimizer)
+        self.scheduler = scheduler if scheduler is not None else LambdaLR(self.optimizer, lr_lambda)
         self.device = device
 
         # initialization
@@ -50,7 +62,7 @@ class LearnWhatYouDontKnow:
         self.teacher.eval()
 
         # tensorboard
-        self.writer = SummaryWriter(log_dir="runs/baseline/kd_adam_edm_hard_label")
+        self.writer = SummaryWriter(log_dir="runs/baseline")
 
     def train(
             self,
@@ -81,38 +93,45 @@ class LearnWhatYouDontKnow:
 
             pbar = tqdm(train_loader)
             self.student.train()
-            for step, x in enumerate(pbar, 1):
-                x = x.to(self.device)
-                # x, y = self.generator(x, y)
+            for step, (x, y) in enumerate(pbar, 1):
+                x, y = x.to(self.device), y.to(self.device)
+                x, y = self.generator(x, y)
 
                 with torch.no_grad():
-                    # teacher_out, teacher_feature = self.teacher(x)
-                    teacher_out = self.teacher(x)
-                _, y = torch.max(teacher_out, dim=1)
+                    teacher_out, teacher_feature = self.teacher(x)
+
+                    now_teacher_confidence = torch.mean(
+                        F.softmax(teacher_out, dim=1)[torch.arange(y.shape[0] // 2), y[: y.shape[0] // 2]]
+                    ).item()
+                    teacher_confidence += now_teacher_confidence
 
                 if fp16:
                     with autocast():
-                        student_out, student_feature = self.student(x)  # N, 60
+                        with torch.no_grad():
+                            student_out, student_feature = self.student(x)  # N, 60
                         _, pre = torch.max(student_out, dim=1)
 
-                        loss = self.criterion(student_out, y)
+                        self.student.train()
 
                         # distillation part
-                        # student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                        student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
                 else:
-                    student_out, student_feature = self.student(x)  # N, 60
+                    with torch.no_grad():
+                        student_out, student_feature = self.student(x)  # N, 60
                     _, pre = torch.max(student_out, dim=1)
 
-                    loss = self.criterion(student_out, y)
+                    self.student.train()
 
                     # distillation part
-                    # student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
+                    student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
 
                     now_student_confidence = torch.mean(
                         F.softmax(student_out, dim=1)[torch.arange(y.shape[0] // 2), y[: y.shape[0] // 2]]
                     ).item()
                     student_confidence += now_student_confidence
 
+                if pre.shape != y.shape:
+                    _, y = torch.max(y, dim=1)
                 train_acc += (torch.sum(pre == y).item()) / y.shape[0]
                 train_loss += loss.item()
                 self.optimizer.zero_grad()
@@ -134,15 +153,21 @@ class LearnWhatYouDontKnow:
             train_loss /= len(train_loader)
             train_acc /= len(train_loader)
 
-            self.scheduler.step(epoch)
+            self.scheduler.step()
 
             # tensorboard
+            self.writer.add_scalar("confidence/teacher_confidence", teacher_confidence / len(train_loader), epoch)
             self.writer.add_scalar("confidence/student_confidence", student_confidence / len(train_loader), epoch)
 
             self.writer.add_scalar("train/loss", train_loss, epoch)
             self.writer.add_scalar("train/acc", train_acc, epoch)
 
             self.writer.add_scalar("train/learning_rate", self.optimizer.param_groups[0]["lr"], epoch)
+
+            ## tensorboard add image
+            image = x[: x.size(0) // 2][0].squeeze()
+            label = CLASS_NAME[y[: y.size(0) // 2][0].squeeze().item()]
+            self.writer.add_image(f"images/{label}", image, epoch)
 
             # validation
             vbar = tqdm(validation_loader, colour="yellow")

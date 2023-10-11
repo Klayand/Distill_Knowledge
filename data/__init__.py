@@ -7,6 +7,10 @@ from .usps import get_usps_train, get_usps_test
 from .svhn import get_svhn_train, get_svhn_test
 from .mnistm import get_mnist_m_train, get_mnist_m_test
 from .cifar10_edm import get_edm_cifar10_loader
+from .cifar100_edm import get_edm_cifar100_loader
+from .cifar100_crd import get_cifar100_dataloaders_sample, get_cifar100_dataloaders
+from .imagenet_crd import get_dataloader_sample, get_imagenet_dataloader
+
 
 __all__ = [
     "get_CIFAR100_test",
@@ -25,5 +29,10 @@ __all__ = [
     "get_usps_train",
     "get_mnist_m_train",
     "get_mnist_m_test",
-    "get_edm_cifar10_loader"
+    "get_edm_cifar10_loader",
+    "get_edm_cifar100_loader",
+    "get_cifar100_dataloaders_sample",  # for distillation
+    "get_cifar100_dataloaders",   # for testing
+    "get_imagenet_dataloader",  # for testing
+    "get_dataloader_sample"  # for distillation
 ]
