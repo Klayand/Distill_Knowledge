@@ -3,7 +3,7 @@ from .KD import KD
 from .SP import SP
 from .NST import NST
 from .AT import AT
-from .RKD import DistanceWiseRKD, AngleWiseRKD, CenterKernelAlignmentRKD
+from .RKD import DistanceWiseRKD, AngleWiseRKD
 from .CWD import ChannelWiseDivergence
 from .FitNet import FitNet
 from .ReviewKD import ReviewKD
@@ -20,8 +20,12 @@ from .VID import LogitsBasedVID, FeatureBasedVID
 from .PKD import PKD
 from .CRD import CRD
 from .KDSVD import KDSVD
-
+from .CKASRRL import SRRLCKA
 from .SPDISTCKA import SPDISTCKA
+from .CKASRRLSP import SRRLCKASP
+from .CKASP import CKASP_bmvc, CKASP, DKCKA
+from .CKA import CenterKernelAlignmentRKD
+
 __all__ = [
     "Distiller",
     "KD",
@@ -51,5 +55,10 @@ __all__ = [
     "PKD",
     "CRD",
     "KDSVD",
-    "SPDISTCKA"
+    "SPDISTCKA",
+    "SRRLCKA",
+    "SRRLCKASP",
+    "CKASP",
+    "CKASP_bmvc",
+    "DKCKA"
 ]

@@ -44,3 +44,27 @@ class Lambda_EMD:
             group['lr'] = now_lr
 
         print(f"now lr = {now_lr}")
+
+
+class Lambda_ImageNet:
+    def __init__(
+            self,
+            optimizer,
+    ):
+        self.optimizer = optimizer
+
+    def step(self, epoch):
+
+        if epoch < 60:
+            now_lr = 0.1
+        elif 60 < epoch < 120:
+            now_lr = 0.01
+        elif 120 < epoch < 180:
+            now_lr = 0.001
+        else:
+            now_lr = 0.001
+
+        for group in self.optimizer.param_groups:
+            group['lr'] = now_lr
+
+        print(f"now lr = {now_lr}")

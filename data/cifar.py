@@ -176,9 +176,15 @@ def get_CIFAR100_train(
         num_workers=8,
         pin_memory=True,
         transform=transforms.ToTensor(),
+        ddp=False
 ):
     set = CIFAR100("./resources/data/CIFAR100", train=True, download=True, transform=transform)
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
+
+    if ddp:
+        ddp_sampler = torch.utils.data.distributed.DistributedSampler(set)
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, sampler=ddp_sampler)
+    else:
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
 
@@ -186,10 +192,17 @@ def get_CIFAR100_test(
         batch_size=256,
         num_workers=8,
         pin_memory=False,
-        transform=transforms.ToTensor()
+        transform=transforms.ToTensor(),
+        ddp=False
 ):
     set = CIFAR100("./resources/data/CIFAR100", train=False, download=True, transform=transform)
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+    if ddp:
+        ddp_sampler = torch.utils.data.distributed.DistributedSampler(set)
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
+                            sampler=ddp_sampler)
+    else:
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
 
@@ -197,7 +210,8 @@ def get_CIFAR10_train(
         batch_size=256,
         num_workers=8,
         pin_memory=True,
-        transform=transforms.ToTensor()
+        transform=transforms.ToTensor(),
+        ddp=False
 ):
 
     # train transform
@@ -213,7 +227,13 @@ def get_CIFAR10_train(
     # )
 
     set = CIFAR10("./resources/data/CIFAR10", train=True, download=True, transform=transform)
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
+
+    if ddp:
+        ddp_sampler = torch.utils.data.distributed.DistributedSampler(set)
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
+                            sampler=ddp_sampler)
+    else:
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader
 
 
@@ -221,8 +241,15 @@ def get_CIFAR10_test(
         batch_size=256,
         num_workers=8,
         pin_memory=True,
-        transform=transforms.ToTensor()
+        transform=transforms.ToTensor(),
+        ddp=False
 ):
     set = CIFAR10("./resources/data/CIFAR10", train=False, download=True, transform=transform)
-    loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+    if ddp:
+        ddp_sampler = torch.utils.data.distributed.DistributedSampler(set)
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
+                            sampler=ddp_sampler)
+    else:
+        loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     return loader

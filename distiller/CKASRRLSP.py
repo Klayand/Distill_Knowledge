@@ -14,7 +14,8 @@ from .__base_distiller import Distiller
 from .utils import get_feature_shapes
 from .KD import kd_loss
 from .CKA import cka_loss
-from .DIST import intra_class_relation, inter_class_relation, cosine_similarity, pearson_correlation
+from .SP import compute_sp_loss, sp_loss
+from .DIST import intra_class_relation, inter_class_relation, cosine_similarity
 
 
 def sr_loss(teacher_logits, student_logits, method: str = "mse", temperature=4, with_l2_norm=True):
@@ -88,9 +89,18 @@ class TransferConv(nn.Module):
         return num_parameters
 
 
-class SRRLCKA(Distiller):
-    def __init__(self, teacher, student, ce_weight=1.0, alpha=1.0, beta=15.0, cka_weight=15, method: str = "mse", with_l2_norm=True):
-        super(SRRLCKA, self).__init__(teacher=teacher, student=student)
+class SRRLCKASP(Distiller):
+    def __init__(self,
+                 teacher,
+                 student,
+                 ce_weight=1.0,
+                 alpha=3000.0,
+                 beta=15.0,
+                 cka_weight=15,
+                 method: str = "mse",
+                 with_l2_norm=True,
+                 single_stage=False):
+        super(SRRLCKASP, self).__init__(teacher=teacher, student=student)
 
         self.ce_weight = ce_weight
         self.alpha = alpha
@@ -98,6 +108,7 @@ class SRRLCKA(Distiller):
         self.cka_weight = cka_weight
         self.method = method
         self.with_l2_norm = with_l2_norm
+        self.single_stage = single_stage
 
         # for other dataset, it needs to be rewritten
         self.teacher_shapes, self.student_shapes = get_feature_shapes(teacher, student, input_size=(32, 32))
@@ -117,7 +128,12 @@ class SRRLCKA(Distiller):
         # Compute loss
         loss_ce = self.ce_weight * F.cross_entropy(logits_student, target)
 
-        loss_fm = self.alpha * fm_loss(teacher_featuremap.detach(), student_featuremap)
+        # loss_fm = self.alpha * fm_loss(teacher_featuremap.detach(), student_featuremap)
+        loss_fm = self.alpha * sp_loss(
+            teacher_feature=teacher_feature["features"][-1] if self.single_stage else teacher_feature["features"][1:],
+            student_feature=student_feature["features"][-1] if self.single_stage else student_feature["features"][1:],
+            single_stage=self.single_stage,
+        )
 
         regression_student_featuremap = self.connector(student_featuremap)
         student_pred_teacher_net = self.teacher(x=None, is_srrl=regression_student_featuremap)

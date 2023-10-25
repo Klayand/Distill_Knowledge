@@ -1,11 +1,4 @@
 import numpy as np
-from PIL import Image
 
-data = np.load("resources/data/edm-cifar100.npz")
-images, targets = data['image'], data['label']
-
-image = Image.fromarray(images[0])
-print(images[0])
-image.show()
-print(targets[0])
-
+a = np.array([[1,2], [5,3], [853,6]])
+print(len(a))

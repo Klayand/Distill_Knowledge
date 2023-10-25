@@ -10,32 +10,32 @@ from torchvision import transforms
 p = lambda x: nn.Parameter(torch.tensor(x))
 
 
-def default_generator_loss(student_out, teacher_out, label, alpha=3, beta=1, student_loss_max=2):
+def default_generator_loss(student_out, teacher_out, label, config):
     t_loss = F.cross_entropy(teacher_out, label)
     s_loss = F.cross_entropy(student_out, label)
 
-    if s_loss > student_loss_max:
-        s_loss = s_loss / s_loss.item() * student_loss_max
+    if s_loss > config.student_max:
+        s_loss = s_loss / s_loss.item() * config.student_max
 
     loss_dict = {
-        'teacher_loss': alpha * t_loss,
-        'student_loss': beta * s_loss,
-        'total_loss': alpha * t_loss - beta * s_loss
+        'teacher_loss': config.generator_alpha * t_loss,
+        'student_loss': config.generator_beta * s_loss,
+        'total_loss': config.generator_alpha * t_loss - config.generator_beta * s_loss
     }
 
-    return alpha * t_loss - beta * s_loss, loss_dict
+    return config.generator_alpha * t_loss - config.generator_beta * s_loss, loss_dict
 
 
-def default_generating_configuration():
-    x = {
-        "iter_step": 1,
-        "lr": 1e-3,
-        "criterion": default_generator_loss,
-    }
-    print("generating config:")
-    print(x)
-    print("-" * 100)
-    return x
+# def default_generating_configuration(config):
+#     x = {
+#         "iter_step": config.iter_step,
+#         "lr": config.generator_learning_rate,
+#         "criterion": default_generator_loss(config),
+#     }
+#     print("generating config:")
+#     print(x)
+#     print("-" * 100)
+#     return x
 
 
 class DifferentiableAutoAug(nn.Module):
@@ -43,7 +43,7 @@ class DifferentiableAutoAug(nn.Module):
         self,
         student: nn.Module,
         teacher: nn.Module,
-        config=default_generating_configuration(),
+        config,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         super(DifferentiableAutoAug, self).__init__()
@@ -57,15 +57,16 @@ class DifferentiableAutoAug(nn.Module):
         # )
         self.model_list = nn.Sequential()
 
-        for i in range(14):
-            self.model_list.add_module(f'model{i + 1}', KA.AugmentationSequential(AutoAugment(policy='cifar10')))
+        self.config = config
 
-        # self.optimizer = torch.optim.Adam(self.aug.parameters(), lr=config["lr"])
-        self.optimizer = torch.optim.Adam(self.model_list.parameters(), lr=config["lr"])
+        for i in range(self.config.num_ka):
+            self.model_list.add_module(f'model{i + 1}', KA.AugmentationSequential(AutoAugment(policy='cifar10')))
 
         self.student = student
         self.teacher = teacher
-        self.config = config
+
+        # self.optimizer = torch.optim.Adam(self.aug.parameters(), lr=config["lr"])
+        self.optimizer = torch.optim.Adam(self.model_list.parameters(), lr=self.config.generator_learning_rate)
 
     @torch.no_grad()
     def clamp(self, model):
@@ -105,7 +106,7 @@ class DifferentiableAutoAug(nn.Module):
         original_x = x.clone()
         original_y = y.clone()
 
-        for _ in range(self.config["iter_step"]):
+        for _ in range(self.config.iter_step):
             x = original_x
 
             # 最好不要使用clamp_，这个是inplace操作，会导致错误。
@@ -113,7 +114,7 @@ class DifferentiableAutoAug(nn.Module):
                 x = model(x).clamp(min=0, max=1)
                 self.clamp(model)
 
-            loss, loss_dict = self.config["criterion"](self.student(x)[0], self.teacher(x)[0], y)
+            loss, loss_dict = default_generator_loss(self.student(x)[0], self.teacher(x)[0], y, self.config)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()

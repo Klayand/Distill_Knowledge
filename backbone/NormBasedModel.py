@@ -18,9 +18,13 @@ class CIFARNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
 
 
 class ImageNetNormModel(torch.nn.Module):
@@ -39,9 +43,13 @@ class ImageNetNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
 
 
 class MnistNormModel(torch.nn.Module):
@@ -57,9 +65,13 @@ class MnistNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
 
 
 class MnistmNormModel(torch.nn.Module):
@@ -75,9 +87,13 @@ class MnistmNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
 
 
 class PacsNormModel(torch.nn.Module):
@@ -96,9 +112,14 @@ class PacsNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
+
 
 
 class SvhnNormModel(torch.nn.Module):
@@ -114,9 +135,14 @@ class SvhnNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
+
 
 
 class UspsNormModel(torch.nn.Module):
@@ -132,6 +158,10 @@ class UspsNormModel(torch.nn.Module):
         self.transforms = transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x):
-        x = self.transforms(x)
-        return self.model(x)
+    def forward(self, x, is_srrl=None):
+        if not is_srrl is None:
+            return self.model(x=None, is_srrl=is_srrl)
+        else:
+            x = self.transforms(x)
+            return self.model(x)
+

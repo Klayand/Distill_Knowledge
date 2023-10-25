@@ -7,9 +7,8 @@ from torch.nn import functional as F
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from optimizer import SGD, Adam
-from scheduler import ALRS, CosineLRS, Lambda_ImageNet
+from scheduler import ALRS, CosineLRS
 from torch.utils.tensorboard import SummaryWriter
-from torch.nn.parallel import DistributedDataParallel as DDP
 
 BEST_ACC_DICT = {"teacher_acc": -999, "student_acc": -999, "distillation_acc": -999}
 
@@ -29,26 +28,15 @@ class Solver:
             optimizer: torch.optim.Optimizer or None = None,
             scheduler: Callable or None = None,
             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-            config=None,
-            local_rank=None
+            visual_path=None
     ):
-        self.config = config
-
-        self.visual_path = self.config.name
-        self.ddp_mode = self.config.ddp_mode
-        self.local_rank = local_rank
-
         self.student = student
         self.teacher = teacher
 
         self.distiller = distiller
 
         self.criterion = loss_function if loss_function is not None else ce_loss
-
-        if 'mobilenet' in self.config.student:
-            self.student_optimizer = optimizer if optimizer is not None else SGD(self.student, lr=0.01)
-        else:
-            self.student_optimizer = optimizer if optimizer is not None else SGD(self.student)
+        self.student_optimizer = optimizer if optimizer is not None else SGD(self.student)
         self.teacher_optimizer = optimizer if optimizer is not None else SGD(self.teacher)
 
         self.student_scheduler = scheduler if scheduler is not None else ALRS(self.student_optimizer)
@@ -58,6 +46,7 @@ class Solver:
 
         self.teacher_path = None
 
+        self.visual_path = visual_path
 
         # initialization
         self.init()
@@ -67,10 +56,6 @@ class Solver:
         self.teacher.to(self.device)
         self.student.to(self.device)
         self.distiller.to(self.device)
-
-        if self.ddp_mode:
-            self.teacher = DDP(self.teacher, device_ids=[self.local_rank], output_device=self.local_rank)
-            self.student = DDP(self.student, device_ids=[self.local_rank], output_device=self.local_rank)
 
         # tensorboard
         self.writer = SummaryWriter(log_dir=f"runs/baseline/{self.visual_path}")
@@ -86,9 +71,6 @@ class Solver:
 
         for epoch in range(1, total_epoch + 1):
             train_loss, train_acc, validation_loss, validation_acc = 0, 0, 0, 0
-
-            if self.ddp_mode:
-                train_loader.sampler.set_epoch(epoch)
 
             # train teacher model
             self.teacher.train()
@@ -195,11 +177,8 @@ class Solver:
 
         self.teacher.eval()
         for epoch in range(1, total_epoch + 1):
-            if self.ddp_mode:
-                train_loader.sampler.set_epoch(epoch)
-
             train_loss, validation_loss, validation_acc = 0, 0, 0
-            train_ce_loss, train_cka_loss, train_sp_loss, train_spcka_loss = 0, 0, 0, 0
+            train_ce_loss, train_fm_loss, train_sr_loss = 0, 0, 0
 
             # train student model
             self.student.train()
@@ -214,12 +193,10 @@ class Solver:
                 else:
                     student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
 
-                train_ce_loss += losses_dict['loss_ce'].item()
-                train_cka_loss += losses_dict['loss_cka'].item()
-                # train_sp_loss += losses_dict['loss_sp'].item()
-                # train_spcka_loss += losses_dict['loss_spcka'].item()
-
                 train_loss += loss.item()
+                train_ce_loss += losses_dict['loss_ce'].item()
+                train_fm_loss += losses_dict['loss_fm'].item()
+                train_sr_loss += losses_dict['loss_sr'].item()
 
                 self.student_optimizer.zero_grad()
 
@@ -241,17 +218,12 @@ class Solver:
                     pbar.set_postfix_str(f"distill loss={train_loss / step}")
 
             train_loss /= len(train_loader)
-            train_ce_loss /= len(train_loader)
-            # train_sp_loss /= len(train_loader)
-            train_cka_loss /= len(train_loader)
-            # train_spcka_loss /= len(train_loader)
 
             # tensorboard
             self.writer.add_scalar("train/loss/distill_loss", train_loss, epoch)
             self.writer.add_scalar("train/loss/ce_loss", train_ce_loss, epoch)
-            # self.writer.add_scalar("train/loss/sp_loss", train_sp_loss, epoch)
-            self.writer.add_scalar("train/loss/cka_loss", train_cka_loss, epoch)
-            # self.writer.add_scalar("train/loss/sp_cka_loss", train_spcka_loss, epoch)
+            self.writer.add_scalar("train/loss/fm_loss", train_fm_loss, epoch)
+            self.writer.add_scalar("train/loss/sr_loss", train_sr_loss, epoch)
 
             self.writer.add_scalar("train/learning_rate", self.student_optimizer.param_groups[0]["lr"], epoch)
 

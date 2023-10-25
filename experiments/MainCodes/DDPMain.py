@@ -86,6 +86,8 @@ _, distillation_acc = learn_what_you_dont_konw.train(
     train_loader=train_loader, validation_loader=test_loader, total_epoch=200
 )
 
+dist.destroy_process_group()
+
 print()
 print("Student model with distillation training completed!")
 

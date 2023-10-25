@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from optimizer import SGD, Adam
 from scheduler import ALRS, LambdaLR, Lambda_EMD
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from utils import CLASS_NAME
 
@@ -27,7 +28,15 @@ class LearnWhatYouDontKnow:
             optimizer: torch.optim.Optimizer or None = None,
             scheduler=None,
             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+            config=None,
+            local_rank=None
     ):
+        self.config = config
+
+        self.visual_path = self.config.name
+        self.ddp_mode = self.config.ddp_mode
+        self.local_rank = local_rank
+
         self.teacher = teacher
         self.student = student
 
@@ -35,7 +44,12 @@ class LearnWhatYouDontKnow:
         self.generator = generator
 
         self.criterion = loss_function if loss_function is not None else ce_loss
-        self.optimizer = optimizer if optimizer is not None else SGD(self.student)
+
+        if 'mobilenet' in self.config.student:
+            self.optimizer = optimizer if optimizer is not None else SGD(self.student, lr=0.01)
+        else:
+            self.optimizer = optimizer if optimizer is not None else SGD(self.student)
+
         self.scheduler = scheduler if scheduler is not None else ALRS(self.optimizer)
         self.device = device
 
@@ -49,10 +63,15 @@ class LearnWhatYouDontKnow:
         # change device
         self.teacher.to(self.device)
         self.student.to(self.device)
+
+        if self.ddp_mode:
+            self.teacher = DDP(self.teacher, device_ids=[self.local_rank], output_device=self.local_rank)
+            self.student = DDP(self.student, device_ids=[self.local_rank], output_device=self.local_rank)
+
         self.teacher.eval()
 
         # tensorboard
-        self.writer = SummaryWriter(log_dir="runs/baseline")
+        self.writer = SummaryWriter(log_dir=f"runs/baseline/{self.visual_path}")
 
     def train(
             self,
@@ -78,6 +97,10 @@ class LearnWhatYouDontKnow:
 
         # train
         for epoch in range(1, total_epoch + 1):
+
+            if self.ddp_mode:
+                train_loader.sampler.set_epoch(epoch)
+
             train_loss, train_acc = 0, 0
             train_ce_loss, train_distill_loss = 0, 0
             student_confidence, teacher_confidence = 0, 0
@@ -161,7 +184,7 @@ class LearnWhatYouDontKnow:
 
             train_acc /= len(train_loader)
 
-            self.scheduler.step(train_loader, epoch)
+            self.scheduler.step(train_loss, epoch)
 
             # tensorboard
             self.writer.add_scalar("confidence/teacher_confidence", teacher_confidence / len(train_loader), epoch)
