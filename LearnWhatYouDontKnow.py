@@ -65,7 +65,7 @@ class LearnWhatYouDontKnow:
         self.student.to(self.device)
 
         if self.ddp_mode:
-            self.teacher = DDP(self.teacher, device_ids=[self.local_rank], output_device=self.local_rank)
+            # self.teacher = DDP(self.teacher, device_ids=[self.local_rank], output_device=self.local_rank)
             self.student = DDP(self.student, device_ids=[self.local_rank], output_device=self.local_rank)
 
         self.teacher.eval()
