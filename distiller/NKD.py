@@ -70,4 +70,4 @@ class NKDLoss(Distiller):
                         "loss_nkd": loss_nkd
                      }
 
-        return logits_s, loss_dict, loss
+        return logit_s, loss_dict, loss
