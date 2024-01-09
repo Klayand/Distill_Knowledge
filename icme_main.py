@@ -13,6 +13,8 @@ from data import get_CIFAR100_train, get_CIFAR100_test, get_imagenet_loader
 parser = argparse.ArgumentParser(description="hyper-parameters")
 
 parser.add_argument('--ddp_mode', type=bool, default=False, help='Distributed DataParallel Training?')
+parser.add_argument('--sync_bn', type=bool, default=False)
+parser.add_argument('--fp16', type=bool, default=False)
 parser.add_argument('--teacher', type=str)
 parser.add_argument('--student', type=str)
 parser.add_argument('--name', type=str, help='Experiment name')
@@ -20,6 +22,8 @@ parser.add_argument('--pretrained', type=bool, default=True)
 parser.add_argument('--dataset', type=str, default='CIFAR')
 parser.add_argument('--num_classes', type=int, default=100)
 parser.add_argument('--ckpt', type=str, default='./resources/checkpoints/')
+parser.add_argument('--epochs', type=int, default=600)
+parser.add_argument('--batch_size', type=int, default=128)
 
 parser = parser.parse_args()
 print("generating config:")
@@ -39,10 +43,11 @@ if parser.ddp_mode:
     local_rank = dist.get_rank()
     torch.cuda.set_device(local_rank)
 
-    student_baseline = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_baseline)
+    if parser.sync_bn:
+        student_baseline = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_baseline)
 
-    student_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_model)
-    teacher_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(teacher_model)
+        student_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_model)
+        teacher_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(teacher_model)
 
 # ------- Normalized Model ----------------
 if parser.dataset == 'CIFAR':
@@ -68,7 +73,7 @@ if parser.pretrained:
         teacher_model.model.load_state_dict(ckpt)
     print("finished loading pretrained model")
 
-distiller = CenterKernelAlignmentRKD(teacher=teacher_model, student=student_model, rkd_weight=15).to("cuda")
+distiller = CenterKernelAlignmentRKD(teacher=teacher_model, student=student_model, inter_weight=15, intra_weight=15).to("cuda")
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Get dataloader
@@ -83,8 +88,8 @@ if parser.dataset == 'CIFAR':
             # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
         ]
     )
-    train_loader = get_CIFAR100_train(batch_size=128, num_workers=16, transform=transform, ddp=parser.ddp_mode)
-    test_loader = get_CIFAR100_test(batch_size=128, num_workers=16, ddp=parser.ddp_mode)
+    train_loader = get_CIFAR100_train(batch_size=parser.batch_size, num_workers=16, transform=transform, ddp=parser.ddp_mode)
+    test_loader = get_CIFAR100_test(batch_size=parser.batch_size, num_workers=16, ddp=parser.ddp_mode)
 
 elif parser.dataset == 'ImageNet':
     transform = transforms.Compose(
@@ -95,8 +100,8 @@ elif parser.dataset == 'ImageNet':
             transforms.ToTensor(),
         ]
     )
-    train_loader = get_imagenet_loader(split='train', batch_size=256, pin_memory=True, transform=transform, ddp=parser.ddp_mode)
-    test_loader = get_imagenet_loader(split='val', batch_size=256, pin_memory=True, ddp=parser.ddp_mode)
+    train_loader = get_imagenet_loader(split='train', batch_size=parser.batch_size, pin_memory=True, transform=transform, ddp=parser.ddp_mode)
+    test_loader = get_imagenet_loader(split='val', batch_size=parser.batch_size, pin_memory=True, ddp=parser.ddp_mode)
 
 # train teacher baseline
 if parser.ddp_mode:
@@ -130,7 +135,7 @@ print()
 # ----------------------------------------------------------------------------------------------------------------------
 # distillation
 
-w.distill(train_loader, test_loader, total_epoch=300)
+w.distill(train_loader, test_loader, total_epoch=parser.epochs, fp16=parser.fp16)
 
 if parser.ddp_mode:
     dist.destroy_process_group()

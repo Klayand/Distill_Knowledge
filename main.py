@@ -7,7 +7,7 @@ from backbone import model_dict, CIFARNormModel, ImageNetNormModel
 from distiller import KD
 from data import get_CIFAR100_train, get_CIFAR100_test, get_imagenet_loader
 from LearnWhatYouDontKnow import LearnWhatYouDontKnow
-from generators import DifferentiableAutoAug
+from generators import DifferentiableAutoAug, DiffusionGenerator, DiffusionAutoAug
 import torch.distributed as dist
 
 # load teacher checkpoint and train student baseline
@@ -15,6 +15,8 @@ import torch.distributed as dist
 parser = argparse.ArgumentParser(description="hyper-parameters")
 
 parser.add_argument('--ddp_mode', type=bool, default=False, help='Distributed DataParallel Training?')
+parser.add_argument('--sync_bn', type=bool, default=False)
+parser.add_argument('--fp16', type=bool, default=False)
 parser.add_argument('--teacher', type=str)
 parser.add_argument('--student', type=str)
 parser.add_argument('--name', type=str, help='Experiment name')
@@ -28,6 +30,9 @@ parser.add_argument('--num_ka', type=int, default=3)
 parser.add_argument('--generator_alpha', type=int, default=2)
 parser.add_argument('--generator_beta', type=int, default=1)
 parser.add_argument('--generator_learning_rate', type=float, default=1e-3)
+parser.add_argument('--accum_iter', type=int, default=20)
+parser.add_argument('--epochs', type=int, default=600)
+parser.add_argument('--batch_size', type=int, default=128)
 
 parser = parser.parse_args()
 print("generating config:")
@@ -46,10 +51,11 @@ if parser.ddp_mode:
     local_rank = dist.get_rank()
     torch.cuda.set_device(local_rank)
 
-    student_baseline = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_baseline)
+    if parser.sync_bn:
+        student_baseline = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_baseline)
 
-    student_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_model)
-    teacher_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(teacher_model)
+        student_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(student_model)
+        teacher_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(teacher_model)
 
 # ------- Normalized Model ----------------
 if parser.dataset == 'CIFAR':
@@ -124,8 +130,8 @@ if parser.dataset == 'CIFAR':
             # transforms.Normalize([0.5071, 0.4867, 0.4408], [0.2675, 0.2565, 0.2761]),
         ]
     )
-    train_loader = get_CIFAR100_train(batch_size=128, num_workers=16, transform=transform, ddp=parser.ddp_mode)
-    test_loader = get_CIFAR100_test(batch_size=128, num_workers=16, ddp=parser.ddp_mode)
+    train_loader = get_CIFAR100_train(batch_size=parser.batch_size, num_workers=16, transform=transform, ddp=parser.ddp_mode)
+    test_loader = get_CIFAR100_test(batch_size=parser.batch_size, num_workers=16, ddp=parser.ddp_mode)
 
 elif parser.dataset == 'ImageNet':
     transform = transforms.Compose(
@@ -136,10 +142,10 @@ elif parser.dataset == 'ImageNet':
             transforms.ToTensor(),
         ]
     )
-    train_loader = get_imagenet_loader(split='train', batch_size=512, pin_memory=True, transform=transform, ddp=parser.ddp_mode)
-    test_loader = get_imagenet_loader(split='val', batch_size=512, pin_memory=True, ddp=parser.ddp_mode)
+    train_loader = get_imagenet_loader(split='train', batch_size=parser.batch_size, pin_memory=True, transform=transform, ddp=parser.ddp_mode)
+    test_loader = get_imagenet_loader(split='val', batch_size=parser.batch_size, pin_memory=True, ddp=parser.ddp_mode)
 
-generator = DifferentiableAutoAug(student=student_model, teacher=teacher_model, config=parser)
+generator = DiffusionGenerator(student=student_model, teacher=teacher_model, config=parser)
 
 if parser.ddp_mode:
     learn_what_you_dont_konw = LearnWhatYouDontKnow(
@@ -160,7 +166,7 @@ else:
     )
 
 _, distillation_acc = learn_what_you_dont_konw.train(
-    train_loader=train_loader, validation_loader=test_loader, total_epoch=600
+    train_loader=train_loader, validation_loader=test_loader, total_epoch=parser.epochs, fp16=parser.fp16
 )
 
 BEST_ACC_DICT['distillation_acc'] = distillation_acc

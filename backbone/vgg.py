@@ -246,3 +246,7 @@ def vgg19_bn(**kwargs):
     """VGG 19-layer model (configuration 'E') with batch normalization"""
     model = VGG(cfg["E"], batch_norm=True, **kwargs)
     return model
+
+
+if __name__ == "__main__":
+    print(vgg19_bn())

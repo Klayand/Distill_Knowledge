@@ -24,7 +24,8 @@ from .CKASRRL import SRRLCKA
 from .SPDISTCKA import SPDISTCKA
 from .CKASRRLSP import SRRLCKASP
 from .CKASP import CKASP_bmvc, CKASP, DKCKA
-from .CKA import CenterKernelAlignmentRKD
+from .CKA import CenterKernelAlignmentRKD, CKA_patch
+from .NKD import NKDLoss
 
 __all__ = [
     "Distiller",
@@ -60,5 +61,7 @@ __all__ = [
     "SRRLCKASP",
     "CKASP",
     "CKASP_bmvc",
-    "DKCKA"
+    "DKCKA",
+    "CKA_patch",
+    "NKDLoss"
 ]

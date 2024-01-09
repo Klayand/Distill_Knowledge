@@ -177,6 +177,7 @@ class DKCKA(Distiller):
         ce_weight=1.0,
         spcka_weight=1.0,
         cka_weight=15.0,
+        inter_weight=None,
         combined_KD=False,
         temperature=None,
         with_l2_norm=True,
@@ -192,6 +193,7 @@ class DKCKA(Distiller):
         self.combined_KD = combined_KD
         self.single_stage = single_stage
         self.soften = soften
+        self.inter_weight = inter_weight
 
     def forward_train(self, image, target, **kwargs):
         logits_student, student_feature = self.student(image)
@@ -225,6 +227,16 @@ class DKCKA(Distiller):
             "loss_spcka": loss_spcka,
             "loss_cka": loss_cka
         }
+
+        if self.inter_weight:
+            loss_cka_inter = self.inter_weight * cka_loss(
+                teacher_logits=logits_teacher.transpose(0, 1),
+                student_logits=logits_student.transpose(0, 1),
+                with_l2_norm=self.with_l2_norm
+            )
+
+            loss_cka = loss_cka + loss_cka_inter
+            loss_dict['loss_cka_inter'] = loss_cka_inter
 
         total_loss = loss_ce + loss_cka + loss_spcka
 

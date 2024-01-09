@@ -4,6 +4,7 @@
     Thanks for the open source of Megvii-Research
 """
 
+from .mobilenetv1_imagenet import mobilenetv1_imagenet, mobilenetv1_imagenet_fakd
 from .mobilenetv2 import *
 from .resnet import *
 from .resnet_imagenet import *
@@ -28,6 +29,8 @@ from .NormBasedModel import (
 )
 
 model_dict = {
+    "mobilenetv1_imagenet": mobilenetv1_imagenet,
+    "mobilenetv1_imagenet_fakd": mobilenetv1_imagenet_fakd,
     "mobilenetV2": mobilenetV2,
     "mobilenetv2_T_w": mobilenetv2_T_w,
     "ShuffleV1": ShuffleV1,

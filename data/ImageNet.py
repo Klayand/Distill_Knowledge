@@ -65,7 +65,7 @@ def get_imagenet_loader(
     root="./resources/data/ImageNet/",
     split="val",
     batch_size=1,
-    num_workers=8,
+    num_workers=4,
     pin_memory=False,
     shuffle=False,
     transform=transforms.Compose([
@@ -102,7 +102,7 @@ def get_imagenet10_loader(
     root="./resources/data/ImageNet/",
     split="val",
     batch_size=1,
-    num_workers=8,
+    num_workers=4,
     pin_memory=False,
     shuffle=False,
     transform=transforms.Compose([
@@ -127,7 +127,7 @@ def get_tinyImageNet_loader(
     root="./resources/data/ImageNet/",
     mode="train",
     batch_size=1,
-    num_workers=8,
+    num_workers=4,
     pin_memory=False,
     shuffle=False,
     transform=transforms.Compose([

@@ -13,9 +13,9 @@ def get_usps_train(
     transform = transforms.Compose(
         [
             transforms.Resize((32, 32)),
-            transforms.Grayscale(num_output_channels=1),
+            # transforms.RandomGrayscale(),
             transforms.ToTensor(),
-            # transforms.Normalize((0.5,), (0.5,)),
+            transforms.Normalize((0.5,), (0.5,)),
         ]
     )
     set = USPS("./resources/data/usps/", train=True, download=True, transform=transform)
@@ -31,9 +31,9 @@ def get_usps_test(
     transform = transforms.Compose(
         [
             transforms.Resize((32, 32)),
-            transforms.Grayscale(num_output_channels=1),
+            # transforms.RandomGrayscale(),
             transforms.ToTensor(),
-            # transforms.Normalize((0.5,), (0.5,)),
+            transforms.Normalize((0.5,), (0.5,)),
         ]
     )
     set = USPS("./resources/data/usps/", train=False, download=True, transform=transform)

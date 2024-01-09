@@ -93,7 +93,9 @@ class LearnWhatYouDontKnow:
         BEST_ACC = -999
 
         scaler = GradScaler()
+
         self.teacher.eval()
+        # self.teacher.train()
 
         # train
         for epoch in range(1, total_epoch + 1):
@@ -111,11 +113,13 @@ class LearnWhatYouDontKnow:
             self.student.train()
             for step, (x, y) in enumerate(pbar, 1):
                 x, y = x.to(self.device), y.to(self.device)
+                print(f"GPU id {self.local_rank}, Batch Size {x.shape[0]}")
                 x, y, generator_loss_dict = self.generator(x, y)
 
-                generator_teacher_loss += generator_loss_dict['teacher_loss'].item()
-                generator_student_loss += generator_loss_dict['student_loss'].item()
-                generator_total_loss += generator_loss_dict['total_loss'].item()
+                if generator_loss_dict:
+                    generator_teacher_loss += generator_loss_dict['teacher_loss'].item()
+                    generator_student_loss += generator_loss_dict['student_loss'].item()
+                    generator_total_loss += generator_loss_dict['total_loss'].item()
 
                 with torch.no_grad():
                     teacher_out, teacher_feature = self.teacher(x)
@@ -178,9 +182,10 @@ class LearnWhatYouDontKnow:
             train_ce_loss /= len(train_loader)
             train_distill_loss /= len(train_loader)
 
-            generator_teacher_loss /= len(train_loader)
-            generator_student_loss /= len(train_loader)
-            generator_total_loss /= len(train_loader)
+            if generator_loss_dict:
+                generator_teacher_loss /= len(train_loader)
+                generator_student_loss /= len(train_loader)
+                generator_total_loss /= len(train_loader)
 
             train_acc /= len(train_loader)
 
@@ -193,19 +198,21 @@ class LearnWhatYouDontKnow:
             self.writer.add_scalar("train/loss/total_loss", train_loss, epoch)
             self.writer.add_scalar("train/loss/ce_loss", train_ce_loss, epoch)
             self.writer.add_scalar("train/loss/distill_loss", train_distill_loss, epoch)
-
-            self.writer.add_scalar("generator/loss/total_loss", generator_total_loss, epoch)
-            self.writer.add_scalar("generator/loss/teacher_loss", generator_teacher_loss, epoch)
-            self.writer.add_scalar("generator/loss/student_loss", generator_student_loss, epoch)
+            
+            if generator_loss_dict:
+                self.writer.add_scalar("generator/loss/total_loss", generator_total_loss, epoch)
+                self.writer.add_scalar("generator/loss/teacher_loss", generator_teacher_loss, epoch)
+                self.writer.add_scalar("generator/loss/student_loss", generator_student_loss, epoch)
 
             self.writer.add_scalar("train/acc", train_acc, epoch)
 
             self.writer.add_scalar("train/learning_rate", self.optimizer.param_groups[0]["lr"], epoch)
 
             ## tensorboard add image
-            image = x[: x.size(0) // 2][0].squeeze()
-            label = CLASS_NAME[y[: y.size(0) // 2][0].squeeze().item()]
-            self.writer.add_image(f"generator/images/{label}", image, epoch)
+            if self.config.dataset != 'ImageNet':
+                image = x[: x.size(0) // 2][0].squeeze()
+                label = CLASS_NAME[y[: y.size(0) // 2][0].squeeze().item()]
+                self.writer.add_image(f"generator/images/{label}", image, epoch)
 
             # validation
             vbar = tqdm(validation_loader, colour="yellow")

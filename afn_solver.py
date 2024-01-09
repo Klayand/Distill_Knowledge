@@ -22,9 +22,7 @@ def ce_loss(x, y):
 class Solver:
     def __init__(
             self,
-            teacher: nn.Module,
-            student: nn.Module or None = None,
-            distiller: nn.Module or None = None,
+            model: nn.Module,
             loss_function: Callable or None = None,
             optimizer: torch.optim.Optimizer or None = None,
             scheduler: Callable or None = None,
@@ -38,26 +36,17 @@ class Solver:
         self.ddp_mode = self.config.ddp_mode
         self.local_rank = local_rank
 
-        self.student = student
-        self.teacher = teacher
-
-        self.distiller = distiller
+        self.teacher = model
 
         self.criterion = loss_function if loss_function is not None else ce_loss
 
-        if 'mobilenet' in self.config.student:
-            self.student_optimizer = optimizer if optimizer is not None else SGD(self.student, lr=0.01)
-        else:
-            self.student_optimizer = optimizer if optimizer is not None else SGD(self.student)
         self.teacher_optimizer = optimizer if optimizer is not None else SGD(self.teacher)
 
-        self.student_scheduler = scheduler if scheduler is not None else ALRS(self.student_optimizer)
         self.teacher_scheduler = scheduler if scheduler is not None else ALRS(self.teacher_optimizer)
 
         self.device = device
 
         self.teacher_path = None
-
 
         # initialization
         self.init()
@@ -65,12 +54,10 @@ class Solver:
     def init(self):
         # change device
         self.teacher.to(self.device)
-        self.student.to(self.device)
-        self.distiller.to(self.device)
 
         if self.ddp_mode:
             # self.teacher = DDP(self.teacher, device_ids=[self.local_rank], output_device=self.local_rank)
-            self.student = DDP(self.student, device_ids=[self.local_rank], output_device=self.local_rank)
+            self.teacher = DDP(self.teacher, device_ids=[self.local_rank], output_device=self.local_rank)
 
         # tensorboard
         self.writer = SummaryWriter(log_dir=f"runs/baseline/{self.visual_path}")
@@ -162,7 +149,8 @@ class Solver:
                     if validation_acc > BEST_ACC_DICT["student_acc"]:
                         BEST_ACC_DICT["student_acc"] = validation_acc
                 else:
-                    BEST_ACC_DICT["teacher_acc"] = validation_acc
+                    if validation_acc > BEST_ACC_DICT["teacher_acc"]:
+                        BEST_ACC_DICT["teacher_acc"] = validation_acc
 
             self.teacher_scheduler.step(train_loss, epoch)
 
@@ -179,117 +167,3 @@ class Solver:
 
         return self.teacher
 
-    def distill(
-            self,
-            train_loader: DataLoader,
-            validation_loader: DataLoader,
-            total_epoch=500,
-            fp16=False,
-    ):
-        from torch.cuda.amp import autocast, GradScaler
-
-        scaler = GradScaler()
-
-        if self.teacher_path:
-            self.teacher.load_state_dict(torch.load(self.teacher_path))
-
-        # self.teacher.eval()
-        self.teacher.train()
-        for epoch in range(1, total_epoch + 1):
-            if self.ddp_mode:
-                train_loader.sampler.set_epoch(epoch)
-
-            train_loss, validation_loss, validation_acc = 0, 0, 0
-            train_ce_loss, train_cka_loss, train_sp_loss, train_spcka_loss = 0, 0, 0, 0
-
-            # train student model
-            self.student.train()
-            # train
-            pbar = tqdm(train_loader)
-            for step, (x, y) in enumerate(pbar, 1):
-                x, y = x.to(self.device), y.to(self.device)
-                # print(f"GPU id {self.local_rank}, Batch Size {x.shape[0]}")
-                if fp16:
-                    with autocast():
-                        student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
-
-                else:
-                    student_logits, losses_dict, loss = self.distiller.forward_train(image=x, target=y)
-
-                train_ce_loss += losses_dict['loss_ce'].item()
-                train_cka_loss += losses_dict['loss_cka'].item()
-                # train_sp_loss += losses_dict['loss_sp'].item()
-                # train_spcka_loss += losses_dict['loss_spcka'].item()
-
-                train_loss += loss.item()
-
-                self.student_optimizer.zero_grad()
-
-                if fp16:
-                    scaler.scale(loss).backward()
-                    scaler.unscale_(self.student_optimizer)
-                    # nn.utils.clip_grad_value_(self.teacher.parameters(), 0.1)
-                    # nn.utils.clip_grad_norm(self.teacher.parameters(), max_norm=10)
-                    scaler.step(self.student_optimizer)
-                    scaler.update()
-
-                else:
-                    loss.backward()
-                    # nn.utils.clip_grad_value_(self.teacher.parameters(), 0.1)
-                    # nn.utils.clip_grad_norm(self.teacher.parameters(), max_norm=10)
-                    self.student_optimizer.step()
-
-                if step % 10 == 0:
-                    pbar.set_postfix_str(f"distill loss={train_loss / step}")
-
-            train_loss /= len(train_loader)
-            train_ce_loss /= len(train_loader)
-            # train_sp_loss /= len(train_loader)
-            train_cka_loss /= len(train_loader)
-            # train_spcka_loss /= len(train_loader)
-
-            # tensorboard
-            self.writer.add_scalar("train/loss/distill_loss", train_loss, epoch)
-            self.writer.add_scalar("train/loss/ce_loss", train_ce_loss, epoch)
-            # self.writer.add_scalar("train/loss/sp_loss", train_sp_loss, epoch)
-            self.writer.add_scalar("train/loss/cka_loss", train_cka_loss, epoch)
-            # self.writer.add_scalar("train/loss/sp_cka_loss", train_spcka_loss, epoch)
-
-            self.writer.add_scalar("train/learning_rate", self.student_optimizer.param_groups[0]["lr"], epoch)
-
-            # validation
-            vbar = tqdm(validation_loader, colour="yellow")
-            self.student.eval()
-            with torch.no_grad():
-                for step, (x, y) in enumerate(vbar, 1):
-                    x, y = x.to(self.device), y.to(self.device)
-                    (
-                        student_out,
-                        _,
-                    ) = self.student(x)
-                    _, pre = torch.max(student_out, dim=1)
-                    loss = self.criterion(student_out, y)
-
-                    if pre.shape != y.shape:
-                        _, y = torch.max(y, dim=1)
-                    validation_acc += (torch.sum(pre == y).item()) / y.shape[0]
-                    validation_loss += loss.item()
-
-                    if step % 10 == 0:
-                        vbar.set_postfix_str(f"loss={validation_loss / step}, acc={validation_acc / step}")
-
-                validation_loss /= len(validation_loader)
-                validation_acc /= len(validation_loader)
-
-                if validation_acc > BEST_ACC_DICT["distillation_acc"]:
-                    BEST_ACC_DICT["distillation_acc"] = validation_acc
-
-            self.student_scheduler.step(train_loss, epoch)
-
-            print(f"epoch {epoch}, distill_loss = {train_loss}")
-            print(f"epoch {epoch}, validation_loss = {validation_loss}, validation_acc = {validation_acc}")
-            print("*" * 100)
-
-            # torch.save(self.student.state_dict(), 'student.pth')
-
-        return self.student
